@@ -8,7 +8,6 @@ export const DEFAULT_ENTITY_TYPES: EntityType[] = [
     { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, frontmatterTemplate: {} },
     { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, frontmatterTemplate: {} },
     { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
-    { id: 'task',           name: 'Task',           triggerTag: '#task',           targetFolder: 'Entities/Tasks',           color: '#1abc9c', enabled: true, frontmatterTemplate: {} },
 ];
 
 export const DEFAULT_SETTINGS: PluginSettings = {

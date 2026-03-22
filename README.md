@@ -25,7 +25,6 @@ List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alic
 | Accomplishment | `#accomplishment`| `Entities/Accomplishments` | ![#7ed321](https://placehold.co/12x12/7ed321/7ed321.png) `#7ed321` |
 | Feedback       | `#feedback`      | `Entities/Feedback`        | ![#9b59b6](https://placehold.co/12x12/9b59b6/9b59b6.png) `#9b59b6` |
 | Project        | `#project`       | `Entities/Projects`        | ![#e74c3c](https://placehold.co/12x12/e74c3c/e74c3c.png) `#e74c3c` |
-| Task           | `#task`          | `Entities/Tasks`           | ![#1abc9c](https://placehold.co/12x12/1abc9c/1abc9c.png) `#1abc9c` |
 
 All defaults can be edited or deleted, and you can add your own entity types.
 
