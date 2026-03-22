@@ -1,3 +1,4 @@
+import { normalizePath } from 'obsidian';
 import type { App, TFile } from 'obsidian';
 import type { EntityType } from '../types';
 
@@ -30,9 +31,10 @@ export class NoteCreator {
         const rawTitle = NoteCreator.deriveTitle(lineText, entityType.triggerTag);
         const sourceNoteName = NoteCreator.resolveSourceNoteName(sourceNotePath);
 
-        await this.ensureFolder(entityType.targetFolder);
+        const targetFolder = normalizePath(entityType.targetFolder);
+        await this.ensureFolder(targetFolder);
 
-        const { filePath, title } = await this.resolveFilePath(entityType.targetFolder, rawTitle);
+        const { filePath, title } = await this.resolveFilePath(targetFolder, rawTitle);
         const content = NoteCreator.buildContent(title, entityType, sourceNoteName, date);
         const file = await this.app.vault.create(filePath, content);
         const modifiedLine = NoteCreator.buildModifiedLine(lineText, entityType.triggerTag, title);
