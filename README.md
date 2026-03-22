@@ -1,90 +1,83 @@
-# Obsidian Sample Plugin
+# Entity Notes
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+An [Obsidian](https://obsidian.md) plugin that watches your editor for lines containing user-configured trigger tags (e.g. `#person`, `#project`) and shows an inline button next to each match. Clicking the button creates a dedicated Markdown note for that entity with pre-filled YAML frontmatter, replaces the original line with a wikilink to the new note, and renders a colored pill badge next to the link.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## How it works
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+1. Type a line containing a trigger tag, for example:
+   ```
+   Redesign the onboarding flow #project
+   ```
+2. A small `→ Project` button appears at the end of the line.
+3. Click it. The plugin:
+   - Creates `Entities/Projects/Redesign the onboarding flow.md` with frontmatter
+   - Replaces the line with `[[Redesign the onboarding flow]]`
+   - Renders a colored `project` pill badge after the link (decoration only — not written to the file)
 
-## First time developing plugins?
+List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alice]]`.
 
-Quick starting guide for new plugin devs:
+## Default entity types
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+| Name           | Trigger tag      | Target folder              | Pill color |
+|----------------|------------------|----------------------------|------------|
+| Person         | `#person`        | `Entities/People`          | ![#4a90d9](https://placehold.co/12x12/4a90d9/4a90d9.png) `#4a90d9` |
+| Idea           | `#idea`          | `Entities/Ideas`           | ![#f5a623](https://placehold.co/12x12/f5a623/f5a623.png) `#f5a623` |
+| Accomplishment | `#accomplishment`| `Entities/Accomplishments` | ![#7ed321](https://placehold.co/12x12/7ed321/7ed321.png) `#7ed321` |
+| Feedback       | `#feedback`      | `Entities/Feedback`        | ![#9b59b6](https://placehold.co/12x12/9b59b6/9b59b6.png) `#9b59b6` |
+| Project        | `#project`       | `Entities/Projects`        | ![#e74c3c](https://placehold.co/12x12/e74c3c/e74c3c.png) `#e74c3c` |
+| Task           | `#task`          | `Entities/Tasks`           | ![#1abc9c](https://placehold.co/12x12/1abc9c/1abc9c.png) `#1abc9c` |
 
-## Releasing new releases
+All defaults can be edited or deleted, and you can add your own entity types.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## Settings
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+Each entity type has:
 
-## Adding your plugin to the community plugin list
+- **Name** — display label shown on the button and pill
+- **Trigger tag** — the hashtag that activates detection (e.g. `#person`)
+- **Target folder** — vault path where notes are created
+- **Color** — background color of the pill badge
+- **Enabled** — disable an entity type without deleting it
+- **Frontmatter template** — extra key-value fields written into every created note
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+Changes take effect immediately without reloading the plugin.
 
-## How to use
+## Created note format
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+```yaml
+---
+title: "Redesign the onboarding flow"
+entity-type: "project"
+tags:
+  - project
+created: "2026-03-22"
+source-note: "[[Daily Note 2026-03-22]]"
+---
 ```
 
-If you have multiple URLs, you can also do:
+Standard fields (`title`, `entity-type`, `tags`, `created`, `source-note`) are always included. Fields from the frontmatter template are appended. If the template defines additional tags, they are merged into the `tags` list rather than replacing it.
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+## Installation
+
+### Manual
+
+1. Download `main.js`, `styles.css`, and `manifest.json` from the latest release.
+2. Copy them to `<vault>/.obsidian/plugins/entity-notes/`.
+3. Enable the plugin in Obsidian → Settings → Community plugins.
+
+### Development
+
+```bash
+git clone https://github.com/your-username/entity-notes
+cd entity-notes
+npm install
+npm run dev   # watch mode
 ```
 
-## API Documentation
+Copy (or symlink) the folder into `<vault>/.obsidian/plugins/entity-notes/` and enable it in Obsidian.
 
-See https://docs.obsidian.md
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+Inspired by the inline task-to-note conversion pattern in [TaskNotes](https://github.com/callumalpass/tasknotes) by Callum Alpass.
