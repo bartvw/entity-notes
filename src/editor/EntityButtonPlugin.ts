@@ -83,9 +83,10 @@ function buildDecorations(
                         if (typeof entityTypeId === 'string') {
                             const et = entityTypes.find(e => e.id === entityTypeId && e.enabled);
                             if (et) {
+                                const afterLink = line.from + linkMatch.index! + linkMatch[0].length;
                                 builder.add(
-                                    line.to,
-                                    line.to,
+                                    afterLink,
+                                    afterLink,
                                     Decoration.widget({
                                         widget: new EntityPillWidget(et),
                                         side: 1,
