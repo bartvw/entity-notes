@@ -2,6 +2,7 @@ import { MarkdownView, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, EntityNotesSettingTab } from './settings';
 import type { PluginSettings } from './types';
 import { buildEntityButtonPlugin } from './editor/EntityButtonPlugin';
+import { injectPillsIntoElement } from './editor/readingViewPill';
 
 export default class EntityNotesPlugin extends Plugin {
     settings: PluginSettings;
@@ -16,6 +17,20 @@ export default class EntityNotesPlugin extends Plugin {
         await this.loadSettings();
         this.registerEditorExtension(buildEntityButtonPlugin(this));
         this.addSettingTab(new EntityNotesSettingTab(this.app, this));
+
+        // Inject entity pills into Reading mode via the markdown post-processor.
+        // Each rendered block is scanned for internal links; those resolving to
+        // a known entity note get a pill span inserted after them.
+        this.registerMarkdownPostProcessor((el) => {
+            injectPillsIntoElement(el, (linkTarget) => {
+                const file = this.app.metadataCache.getFirstLinkpathDest(linkTarget, '');
+                if (!file) return null;
+                const cache = this.app.metadataCache.getFileCache(file);
+                const entityTypeId: unknown = cache?.frontmatter?.['entity-type'];
+                if (typeof entityTypeId !== 'string') return null;
+                return this.settings.entityTypes.find(e => e.id === entityTypeId && e.enabled) ?? null;
+            });
+        });
 
         // Rebuild decorations whenever the metadata cache indexes a file so
         // the entity pill appears immediately after a note is created, without

@@ -93,14 +93,23 @@ Empty after the frontmatter block. The user fills it in.
 
 ## The entity pill
 
-After conversion, the `EntityButtonPlugin` detects lines containing a wikilink to a known entity note and renders a styled pill badge after the link as a CM6 decoration. The pill is visual only — it is never written to the file.
+After conversion, the plugin detects lines (or rendered HTML) containing a wikilink to a known entity note and renders a styled pill badge after the link. The pill is visual only — it is never written to the file.
 
 - Rendered after the wikilink on the same line
 - Displays the entity type name (e.g. `project`, `idea`)
 - Background color is user-configurable per entity type in settings; defaults are provided for all six built-in types
-- Visible in Live Preview and Source mode, not in Reading mode
+- Visible in Live Preview, Source mode, and Reading mode
 - Uses `createEl` / DOM API, not `innerHTML`
 - The pill is re-rendered whenever the document or viewport changes, consistent with the `EntityButtonPlugin` update cycle
+
+### Implementation by mode
+
+| Mode | Mechanism |
+|------|-----------|
+| Live Preview / Source | CM6 `Decoration.widget` via `EntityButtonPlugin` (`EntityPillWidget`) |
+| Reading | `MarkdownPostProcessor` that finds `<a class="internal-link">` elements and inserts a pill `<span>` after each one that resolves to a known entity note |
+
+The two mechanisms produce identical visual output, using the same CSS class and inline `backgroundColor` style.
 
 ### Example
 
