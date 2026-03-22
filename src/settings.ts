@@ -130,7 +130,7 @@ class EntityTypeModal extends Modal {
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: this.isNew ? 'Add entity type' : 'Edit entity type' });
+        new Setting(contentEl).setName(this.isNew ? 'Add entity type' : 'Edit entity type').setHeading();
         this.buildForm(contentEl);
     }
 
@@ -197,7 +197,7 @@ class EntityTypeModal extends Modal {
 
         // Frontmatter template ------------------------------------------------
 
-        el.createEl('h3', { text: 'Frontmatter template' });
+        new Setting(el).setName('Frontmatter template').setHeading();
         el.createEl('p', {
             text: 'Extra fields written into every note created by this entity type. '
                 + 'Standard fields (title, entity-type, tags, created, source-note) are '
