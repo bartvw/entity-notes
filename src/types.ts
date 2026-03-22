@@ -3,6 +3,7 @@ export interface EntityType {
     name: string;
     triggerTag: string;
     targetFolder: string;
+    color: string;
     enabled: boolean;
     frontmatterTemplate: Record<string, unknown>;
     basesFile?: string;

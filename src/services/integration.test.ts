@@ -6,12 +6,12 @@ import type { EntityType } from '../types';
 
 // Mirror the default entity types without importing settings.ts (which requires obsidian)
 const DEFAULT_ENTITY_TYPES: EntityType[] = [
-    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          enabled: true, frontmatterTemplate: {} },
-    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           enabled: true, frontmatterTemplate: {} },
-    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', enabled: true, frontmatterTemplate: {} },
-    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        enabled: true, frontmatterTemplate: {} },
-    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        enabled: true, frontmatterTemplate: {} },
-    { id: 'task',           name: 'Task',           triggerTag: '#task',           targetFolder: 'Entities/Tasks',           enabled: true, frontmatterTemplate: {} },
+    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, frontmatterTemplate: {} },
+    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, frontmatterTemplate: {} },
+    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, frontmatterTemplate: {} },
+    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, frontmatterTemplate: {} },
+    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
+    { id: 'task',           name: 'Task',           triggerTag: '#task',           targetFolder: 'Entities/Tasks',           color: '#1abc9c', enabled: true, frontmatterTemplate: {} },
 ];
 
 // ---------------------------------------------------------------------------
@@ -56,9 +56,7 @@ describe('PatternMatcher + NoteCreator integration', () => {
         );
 
         expect(result.title).toBe('Redesign the onboarding flow');
-        expect(result.modifiedLine).toBe(
-            'Redesign the onboarding flow [[Redesign the onboarding flow]]',
-        );
+        expect(result.modifiedLine).toBe('[[Redesign the onboarding flow]]');
 
         const [calledPath, calledContent] = mockCreate.mock.calls[0] as [string, string];
         expect(calledPath).toBe('Entities/Projects/Redesign the onboarding flow.md');
@@ -112,7 +110,7 @@ describe('PatternMatcher + NoteCreator integration', () => {
         );
 
         expect(result.title).toBe('Met Sarah');
-        expect(result.modifiedLine).toBe('- Met Sarah [[Met Sarah]]');
+        expect(result.modifiedLine).toBe('- [[Met Sarah]]');
 
         const [calledPath] = mockCreate.mock.calls[0] as [string, string];
         expect(calledPath).toBe('Entities/People/Met Sarah.md');

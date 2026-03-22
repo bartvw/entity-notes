@@ -71,13 +71,13 @@ export class NoteCreator {
     }
 
     /**
-     * Rewrites the source line: removes the trigger tag, collapses extra
-     * whitespace left behind, then appends a [[wikilink]] to the note title.
+     * Replaces the entire source line with just `[[noteTitle]]`, preserving
+     * any leading list marker (e.g. `- `, `* `, `1. `).
      */
-    static buildModifiedLine(lineText: string, triggerTag: string, noteTitle: string): string {
-        const re = NoteCreator.tagRegex(triggerTag);
-        const withoutTag = lineText.replace(re, ' ').replace(/\s+/g, ' ').trim();
-        return `${withoutTag} [[${noteTitle}]]`;
+    static buildModifiedLine(lineText: string, _triggerTag: string, noteTitle: string): string {
+        const listMarkerMatch = lineText.match(/^([-*+]|\d+[.)]) /);
+        const prefix = listMarkerMatch ? listMarkerMatch[0] : '';
+        return `${prefix}[[${noteTitle}]]`;
     }
 
     /**

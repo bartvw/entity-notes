@@ -9,12 +9,12 @@ import type { App, TFile } from 'obsidian';
 
 const PERSON: EntityType = {
     id: 'person', name: 'Person', triggerTag: '#person',
-    targetFolder: 'Entities/People', enabled: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true, frontmatterTemplate: {},
 };
 
 const PROJECT: EntityType = {
     id: 'project', name: 'Project', triggerTag: '#project',
-    targetFolder: 'Entities/Projects', enabled: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true, frontmatterTemplate: {},
 };
 
 const FIXED_DATE = '2026-03-22';
@@ -125,29 +125,44 @@ describe('NoteCreator.sanitizeFilename', () => {
 // ---------------------------------------------------------------------------
 
 describe('NoteCreator.buildModifiedLine', () => {
-    it('removes tag at end and appends wikilink', () => {
+    it('replaces the entire line with just the wikilink', () => {
         expect(NoteCreator.buildModifiedLine('Redesign the onboarding flow #project', '#project', 'Redesign the onboarding flow'))
-            .toBe('Redesign the onboarding flow [[Redesign the onboarding flow]]');
+            .toBe('[[Redesign the onboarding flow]]');
     });
 
-    it('removes tag at start and appends wikilink', () => {
+    it('replaces the entire line regardless of tag position', () => {
         expect(NoteCreator.buildModifiedLine('#project Redesign the onboarding flow', '#project', 'Redesign the onboarding flow'))
-            .toBe('Redesign the onboarding flow [[Redesign the onboarding flow]]');
+            .toBe('[[Redesign the onboarding flow]]');
     });
 
-    it('removes tag mid-line and collapses extra space', () => {
+    it('replaces entire line with mid-line tag', () => {
         expect(NoteCreator.buildModifiedLine('Redesign #project the flow', '#project', 'Redesign the flow'))
-            .toBe('Redesign the flow [[Redesign the flow]]');
+            .toBe('[[Redesign the flow]]');
     });
 
-    it('normalises multiple spaces around the removed tag', () => {
+    it('replaces entire line with multiple spaces', () => {
         expect(NoteCreator.buildModifiedLine('a  #person  b', '#person', 'a b'))
-            .toBe('a b [[a b]]');
+            .toBe('[[a b]]');
     });
 
     it('uses the collision-resolved title in the wikilink', () => {
         expect(NoteCreator.buildModifiedLine('Sarah #person', '#person', 'Sarah 2'))
-            .toBe('Sarah [[Sarah 2]]');
+            .toBe('[[Sarah 2]]');
+    });
+
+    it('preserves a dash list marker', () => {
+        expect(NoteCreator.buildModifiedLine('- Met Sarah #person', '#person', 'Met Sarah'))
+            .toBe('- [[Met Sarah]]');
+    });
+
+    it('preserves an asterisk list marker', () => {
+        expect(NoteCreator.buildModifiedLine('* Task item #task', '#task', 'Task item'))
+            .toBe('* [[Task item]]');
+    });
+
+    it('preserves a numbered list marker', () => {
+        expect(NoteCreator.buildModifiedLine('1. Buy milk #task', '#task', 'Buy milk'))
+            .toBe('1. [[Buy milk]]');
     });
 });
 
@@ -346,7 +361,7 @@ describe('NoteCreator.create', () => {
 
     it('returns the modified line with wikilink', async () => {
         const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
-        expect(result.modifiedLine).toBe('Sarah [[Sarah]]');
+        expect(result.modifiedLine).toBe('[[Sarah]]');
     });
 
     it('writes correct frontmatter content into the file', async () => {
@@ -403,7 +418,7 @@ describe('NoteCreator.create', () => {
                 p === 'Entities/People/Sarah.md' ? { path: p } : null,
             );
             const result = await nc.create('Sarah #person', PERSON, 'Daily.md', FIXED_DATE);
-            expect(result.modifiedLine).toBe('Sarah [[Sarah 2]]');
+            expect(result.modifiedLine).toBe('[[Sarah 2]]');
         });
     });
 
@@ -416,9 +431,7 @@ describe('NoteCreator.create', () => {
                 FIXED_DATE,
             );
 
-            expect(result.modifiedLine).toBe(
-                'Redesign the onboarding flow [[Redesign the onboarding flow]]',
-            );
+            expect(result.modifiedLine).toBe('[[Redesign the onboarding flow]]');
 
             const content: string = create.mock.calls[0]?.[1] as string;
             expect(content).toContain('title: "Redesign the onboarding flow"');

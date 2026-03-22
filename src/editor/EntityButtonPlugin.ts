@@ -4,6 +4,7 @@ import type { Extension } from '@codemirror/state';
 import type EntityNotesPlugin from '../main';
 import { PatternMatcher } from '../services/PatternMatcher';
 import { EntityWidget } from './EntityWidget';
+import { EntityPillWidget } from './EntityPillWidget';
 
 /**
  * Creates the CM6 editor extension that watches for entity trigger tags in
@@ -67,9 +68,33 @@ function buildDecorations(
                     line.to,
                     Decoration.widget({
                         widget: new EntityWidget(plugin, match, line.text, line.number),
-                        side: 1, // render after the line content
+                        side: 1,
                     }),
                 );
+            } else {
+                // Pill detection: find a [[wikilink]] and check its frontmatter
+                const linkMatch = line.text.match(/\[\[([^\]|#^]+?)(?:\|[^\]]+)?\]\]/);
+                if (linkMatch) {
+                    const linkText = linkMatch[1]!.trim();
+                    const file = plugin.app.metadataCache.getFirstLinkpathDest(linkText, '');
+                    if (file) {
+                        const cache = plugin.app.metadataCache.getFileCache(file);
+                        const entityTypeId = cache?.frontmatter?.['entity-type'];
+                        if (typeof entityTypeId === 'string') {
+                            const et = entityTypes.find(e => e.id === entityTypeId && e.enabled);
+                            if (et) {
+                                builder.add(
+                                    line.to,
+                                    line.to,
+                                    Decoration.widget({
+                                        widget: new EntityPillWidget(et),
+                                        side: 1,
+                                    }),
+                                );
+                            }
+                        }
+                    }
+                }
             }
 
             // Advance past the newline character. Without +1 the last line in

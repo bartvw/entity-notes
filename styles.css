@@ -44,3 +44,17 @@
     background: var(--interactive-accent-hover);
     color: var(--text-on-accent);
 }
+
+/* entity-notes: entity type pill badge (decoration-only, not written to file) */
+.entity-notes-pill {
+    display: inline-block;
+    margin-left: 0.5em;
+    padding: 0.05em 0.45em;
+    border-radius: 10px;
+    font-size: 0.72em;
+    font-weight: 500;
+    line-height: 1.4;
+    vertical-align: middle;
+    color: #fff;
+    letter-spacing: 0.02em;
+}
