@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { isCursorAtLineEnd } from './keymapUtils';
+import { isCursorAtLineEnd, findMatchForEnter } from './keymapUtils';
+import type { PluginSettings } from '../types';
+
+// ---------------------------------------------------------------------------
+// isCursorAtLineEnd
+// ---------------------------------------------------------------------------
 
 describe('isCursorAtLineEnd', () => {
     const text = 'Hello #person';
@@ -10,9 +15,7 @@ describe('isCursorAtLineEnd', () => {
         expect(isCursorAtLineEnd(from + len, from, text)).toBe(true);
     });
 
-    it('returns true when cursor is one character before the end', () => {
-        // last non-whitespace is at index 12; cursor at 12 is still >= trimEnd length (13)? No —
-        // trimEnd().length === 13 so cursor must be >= 13. Position 12 is one short.
+    it('returns false when cursor is one position before the end', () => {
         expect(isCursorAtLineEnd(from + len - 1, from, text)).toBe(false);
     });
 
@@ -31,7 +34,6 @@ describe('isCursorAtLineEnd', () => {
 
     it('returns true when line has trailing spaces and cursor is right after the last word', () => {
         const padded = 'Hello #person   ';
-        // trimEnd().length === 13; cursor at 13 is >= 13
         expect(isCursorAtLineEnd(from + 13, from, padded)).toBe(true);
     });
 
@@ -44,5 +46,75 @@ describe('isCursorAtLineEnd', () => {
         const lineFrom = 42;
         expect(isCursorAtLineEnd(lineFrom + len, lineFrom, text)).toBe(true);
         expect(isCursorAtLineEnd(lineFrom + len - 1, lineFrom, text)).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// findMatchForEnter
+// ---------------------------------------------------------------------------
+
+const PROJECT_SETTINGS: PluginSettings = {
+    convertOnEnter: true,
+    entityTypes: [
+        { id: 'project', name: 'Project', triggerTag: '#project',
+          targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
+    ],
+};
+
+function makeState(lineText: string, cursorOffset: number, allLines?: string[]) {
+    const lines = allLines ?? [lineText];
+    // Find which line number (1-based) this lineText corresponds to
+    const lineNumber = Math.max(1, lines.indexOf(lineText) + 1);
+    const lineFrom = 0;
+    const lineInfo = { from: lineFrom, to: lineFrom + lineText.length, text: lineText, number: lineNumber };
+    return {
+        selection: { main: { head: lineFrom + cursorOffset } },
+        doc: {
+            lineAt: () => lineInfo,
+            lines: lines.length,
+            line: (n: number) => {
+                const t = lines[n - 1] ?? '';
+                return { from: 0, to: t.length, text: t, number: n };
+            },
+        },
+    };
+}
+
+describe('findMatchForEnter', () => {
+    it('returns null when cursor is mid-line', () => {
+        const state = makeState('Redesign the onboarding flow #project', 5);
+        expect(findMatchForEnter(state, PROJECT_SETTINGS)).toBeNull();
+    });
+
+    it('returns null when line has no trigger tag', () => {
+        const text = 'Just a regular line';
+        const state = makeState(text, text.length);
+        expect(findMatchForEnter(state, PROJECT_SETTINGS)).toBeNull();
+    });
+
+    it('returns null when the matching entity type is disabled', () => {
+        const settings: PluginSettings = {
+            ...PROJECT_SETTINGS,
+            entityTypes: [{ ...PROJECT_SETTINGS.entityTypes[0]!, enabled: false }],
+        };
+        const text = 'Redesign the onboarding flow #project';
+        const state = makeState(text, text.length);
+        expect(findMatchForEnter(state, settings)).toBeNull();
+    });
+
+    it('returns the entity type and line number when cursor is at end of matched line', () => {
+        const text = 'Redesign the onboarding flow #project';
+        const state = makeState(text, text.length);
+        const result = findMatchForEnter(state, PROJECT_SETTINGS);
+        expect(result).not.toBeNull();
+        expect(result!.entityType.id).toBe('project');
+        expect(result!.lineNumber).toBe(1);
+    });
+
+    it('returns null when line is inside a fenced code block', () => {
+        const lines = ['```', 'Redesign the onboarding flow #project', '```'];
+        const text = lines[1]!;
+        const state = makeState(text, text.length, lines);
+        expect(findMatchForEnter(state, PROJECT_SETTINGS)).toBeNull();
     });
 });

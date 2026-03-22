@@ -141,6 +141,7 @@ When the **Convert on Enter** setting is enabled, pressing Enter at the end of a
 
 - The conversion fires when the user presses Enter and the cursor is at or after the last non-whitespace character on a matched line.
 - If the cursor is not at the end of the line (e.g. the user is editing mid-line), Enter behaves normally and no conversion occurs.
+- After conversion fires, a newline is inserted and the cursor moves to the next line, as it would with a normal Enter press.
 - If the line no longer matches at the moment Enter is pressed (e.g. the trigger tag was just deleted), Enter behaves normally and inserts a newline.
 - The setting is global — it applies to all entity types.
 - Default: **off**.
