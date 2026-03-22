@@ -6,7 +6,7 @@ This document defines the expected behavior of the entity-notes plugin. It is th
 
 ## Overview
 
-The plugin monitors the active editor for lines containing a configured trigger tag (e.g. `#idea`, `#person`). When a matching line is found that has not yet been converted, an inline button appears at the end of the line. Clicking the button creates a dedicated Markdown note for that entity, removes the trigger tag from the source line, and replaces it with a wikilink to the new note.
+The plugin monitors the active editor for lines containing a configured trigger tag (e.g. `#idea`, `#project`). When a matching line is found that has not yet been converted, an inline button appears at the end of the line. Clicking the button creates a dedicated Markdown note for that entity, and replaces the entire source line with a wikilink to the new note followed by a styled entity pill. The pill is rendered as a CM6 decoration — it is not written to the file.
 
 ---
 
@@ -14,14 +14,14 @@ The plugin monitors the active editor for lines containing a configured trigger 
 
 The plugin ships with the following entity types pre-configured. All are enabled by default. The user can edit, disable, or delete any of them, and add new ones.
 
-| Entity type   | Trigger tag      | Default target folder  |
-|---------------|------------------|------------------------|
-| Person        | `#person`        | `Entities/People`      |
-| Idea          | `#idea`          | `Entities/Ideas`       |
-| Accomplishment| `#accomplishment`| `Entities/Accomplishments` |
-| Feedback      | `#feedback`      | `Entities/Feedback`    |
-| Project       | `#project`       | `Entities/Projects`    |
-| Task          | `#task`          | `Entities/Tasks`       |
+| Entity type    | Trigger tag      | Default target folder      | Default color |
+|----------------|------------------|----------------------------|---------------|
+| Person         | `#person`        | `Entities/People`          | `#4a90d9`     |
+| Idea           | `#idea`          | `Entities/Ideas`           | `#f5a623`     |
+| Accomplishment | `#accomplishment`| `Entities/Accomplishments` | `#7ed321`     |
+| Feedback       | `#feedback`      | `Entities/Feedback`        | `#9b59b6`     |
+| Project        | `#project`       | `Entities/Projects`        | `#e74c3c`     |
+| Task           | `#task`          | `Entities/Tasks`           | `#1abc9c`     |
 
 ---
 
@@ -86,8 +86,21 @@ Empty after the frontmatter block. The user fills it in.
 
 ### Behavior after creation
 - The note is created silently. It is not opened or focused.
-- The source line is modified: the trigger tag is removed and a `[[NoteFilename]]` wikilink is appended.
-- The modification preserves the rest of the line content exactly.
+- The entire source line is replaced with just the wikilink: `[[NoteFilename]]`
+- If the line was a list item (e.g. `- `), the list marker is preserved: `- [[NoteFilename]]`
+
+---
+
+## The entity pill
+
+After conversion, the `EntityButtonPlugin` detects lines containing a wikilink to a known entity note and renders a styled pill badge after the link as a CM6 decoration. The pill is visual only — it is never written to the file.
+
+- Rendered after the wikilink on the same line
+- Displays the entity type name (e.g. `project`, `idea`)
+- Background color is user-configurable per entity type in settings; defaults are provided for all six built-in types
+- Visible in Live Preview and Source mode, not in Reading mode
+- Uses `createEl` / DOM API, not `innerHTML`
+- The pill is re-rendered whenever the document or viewport changes, consistent with the `EntityButtonPlugin` update cycle
 
 ### Example
 
@@ -96,9 +109,14 @@ Before:
 Redesign the onboarding flow #project
 ```
 
-After conversion:
+After conversion, the file contains:
 ```
-Redesign the onboarding flow [[Redesign the onboarding flow]]
+[[Redesign the onboarding flow]]
+```
+
+Rendered in the editor (the pill is a visual decoration, not stored in the file):
+```
+[[Redesign the onboarding flow]]  [project]
 ```
 
 Created note at `Entities/Projects/Redesign the onboarding flow.md`:
@@ -123,13 +141,15 @@ Each entity type has:
 - `name` — display label (e.g. `Person`)
 - `triggerTag` — the hashtag that triggers detection (e.g. `#person`)
 - `targetFolder` — vault path for created notes (e.g. `Entities/People`)
+- `color` — background color for the entity pill (e.g. `#4a90d9`); a sensible default is provided for each built-in type
 - `enabled` — boolean, defaults to true; disabled entity types are ignored by the editor plugin
 - `frontmatterTemplate` — key-value pairs added to created note frontmatter, defaults to empty
 - `basesFile` — reserved for future use; not exposed in the UI and not used in v1
 
 ### Settings UI behavior
-- Entity types are listed with their name and trigger tag visible
+- Entity types are listed with their name, trigger tag, and color pill visible
 - Each entry has an enabled toggle, an edit button, and a delete button
+- Editing an entity type exposes a color picker for the pill color
 - A button allows adding a new entity type
 - Deleting an entity type does not delete any notes already created by it
 - Changes take effect immediately without restarting the plugin

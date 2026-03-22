@@ -50,6 +50,7 @@ interface EntityType {
   name: string;                 // display label (e.g. "Person")
   triggerTag: string;           // e.g. "#person"
   targetFolder: string;         // e.g. "Entities/People"
+  color: string;                // background color for the entity pill (e.g. "#4a90d9")
   enabled: boolean;             // whether this entity type is active, defaults to true
   frontmatterTemplate: Record<string, unknown>;  // pre-filled YAML properties, defaults to {}
   basesFile?: string;           // reserved for future use — not implemented in v1
@@ -94,7 +95,7 @@ Reference: TaskNotes uses this same pattern in `src/editor/InstantConvertButtons
 ## Note creation behavior
 
 When the button is clicked, `NoteCreator`:
-1. Extracts the note title from the line text (strips the trigger tag, sanitizes for use as a filename)
+1. Extracts the note title from the line text (strips the trigger tag and list marker if present, sanitizes for use as a filename)
 2. Creates the file at `{targetFolder}/{title}.md`
 3. Writes YAML frontmatter from `EntityType.frontmatterTemplate`, plus:
    - `title: <derived from line text>`
@@ -102,7 +103,19 @@ When the button is clicked, `NoteCreator`:
    - `tags: [<EntityType.id>]` — seeded with the entity type id; merged with any tags from `frontmatterTemplate`
    - `created: <ISO date>`
    - `source-note: [[OriginalNoteName]]`
-4. Modifies the original line to append `[[title]]` and removes the trigger tag
+4. Replaces the entire source line with `[[title]]`, preserving any list marker (e.g. `- [[title]]`)
+
+---
+
+## Entity pill
+
+After conversion, `EntityButtonPlugin` also detects lines containing a wikilink to a known entity note (identified by `entity-type` in the note's frontmatter via `app.metadataCache`) and renders a styled pill badge after the link as a CM6 `Decoration.widget`.
+
+- The pill is visual only — never written to the file
+- Background color comes from `EntityType.color`
+- Label is `EntityType.name` in lowercase
+- Uses `createEl` / DOM API, not `innerHTML`
+- Rendered in the same `update()` cycle as the convert button, on the same `ViewPlugin`
 
 ---
 
@@ -110,8 +123,9 @@ When the button is clicked, `NoteCreator`:
 
 The settings tab allows the user to add, edit, and delete entity types. Each entity type exposes:
 - Name (display label)
-- Trigger tag (e.g. `#person`)
+- Trigger tag (e.g. `#project`)
 - Target folder
+- Color (color picker for the entity pill)
 - Enabled toggle
 - Frontmatter template (editable key-value pairs)
 
@@ -119,14 +133,14 @@ The settings tab allows the user to add, edit, and delete entity types. Each ent
 
 On first install, seed the following default entity types:
 
-| id             | name           | triggerTag       | targetFolder               |
-|----------------|----------------|------------------|----------------------------|
-| person         | Person         | `#person`        | `Entities/People`          |
-| idea           | Idea           | `#idea`          | `Entities/Ideas`           |
-| accomplishment | Accomplishment | `#accomplishment`| `Entities/Accomplishments` |
-| feedback       | Feedback       | `#feedback`      | `Entities/Feedback`        |
-| project        | Project        | `#project`       | `Entities/Projects`        |
-| task           | Task           | `#task`          | `Entities/Tasks`           |
+| id             | name           | triggerTag       | targetFolder               | color     |
+|----------------|----------------|------------------|----------------------------|-----------|
+| person         | Person         | `#person`        | `Entities/People`          | `#4a90d9` |
+| idea           | Idea           | `#idea`          | `Entities/Ideas`           | `#f5a623` |
+| accomplishment | Accomplishment | `#accomplishment`| `Entities/Accomplishments` | `#7ed321` |
+| feedback       | Feedback       | `#feedback`      | `Entities/Feedback`        | `#9b59b6` |
+| project        | Project        | `#project`       | `Entities/Projects`        | `#e74c3c` |
+| task           | Task           | `#task`          | `Entities/Tasks`           | `#1abc9c` |
 
 ---
 
