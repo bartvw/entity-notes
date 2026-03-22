@@ -12,6 +12,7 @@ export const DEFAULT_ENTITY_TYPES: EntityType[] = [
 
 export const DEFAULT_SETTINGS: PluginSettings = {
     entityTypes: DEFAULT_ENTITY_TYPES,
+    convertOnEnter: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,17 @@ export class EntityNotesSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
+
+        new Setting(containerEl)
+            .setName('Convert on enter')
+            .setDesc('When enabled, pressing enter at the end of a matched line converts it immediately.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.convertOnEnter)
+                .onChange(async value => {
+                    this.plugin.settings.convertOnEnter = value;
+                    await this.plugin.saveSettings();
+                }),
+            );
 
         const entityTypes = this.plugin.settings.entityTypes;
 

@@ -45,7 +45,7 @@ export class EntityWidget extends WidgetType {
             // stopPropagation prevents CM6 from also handling this mousedown.
             e.preventDefault();
             e.stopPropagation();
-            this.handleClick(view).catch((err: unknown) => {
+            convertLine(this.plugin, this.entityType, this.lineNumber, view).catch((err: unknown) => {
                 console.error('[entity-notes] Failed to create note:', err);
                 new Notice('Entity notes: could not create note — see console');
             });
@@ -64,33 +64,43 @@ export class EntityWidget extends WidgetType {
         return -1; // -1 = inline widget; do not reserve extra vertical space
     }
 
-    private async handleClick(view: EditorView): Promise<void> {
-        // Re-read from current state (not from the stale closure at render time)
-        const line = view.state.doc.line(this.lineNumber);
+}
 
-        // Guard 1 — user may have already edited the line before clicking
-        if (!line.text.includes(this.entityType.triggerTag)) return;
+/**
+ * Performs the entity conversion for a single matched line. Shared by
+ * EntityWidget (button click) and the Convert-on-Enter keymap handler.
+ */
+export async function convertLine(
+    plugin: EntityNotesPlugin,
+    entityType: EntityType,
+    lineNumber: number,
+    view: EditorView,
+): Promise<void> {
+    // Re-read from current state (not from any stale closure at render time)
+    const line = view.state.doc.line(lineNumber);
 
-        const sourceNotePath = this.plugin.app.workspace.getActiveFile()?.path ?? '';
+    // Guard 1 — user may have already edited the line before triggering
+    if (!line.text.includes(entityType.triggerTag)) return;
 
-        const result = await new NoteCreator(this.plugin.app).create(
-            line.text,
-            this.entityType,
-            sourceNotePath,
+    const sourceNotePath = plugin.app.workspace.getActiveFile()?.path ?? '';
+
+    const result = await new NoteCreator(plugin.app).create(
+        line.text,
+        entityType,
+        sourceNotePath,
+    );
+
+    // Guard 2 — re-read after the async vault operation; another edit may
+    // have landed while we were awaiting
+    const freshLine = view.state.doc.line(lineNumber);
+    if (freshLine.text !== line.text) {
+        new Notice(
+            `entity-notes: note "${result.title}" was created but the source line changed — please add the link manually.`,
         );
-
-        // Guard 2 — re-read after the async vault operation; another edit may
-        // have landed while we were awaiting
-        const freshLine = view.state.doc.line(this.lineNumber);
-        if (freshLine.text !== line.text) {
-            new Notice(
-                `entity-notes: note "${result.title}" was created but the source line changed — please add the link manually.`,
-            );
-            return;
-        }
-
-        view.dispatch({
-            changes: { from: freshLine.from, to: freshLine.to, insert: result.modifiedLine },
-        });
+        return;
     }
+
+    view.dispatch({
+        changes: { from: freshLine.from, to: freshLine.to, insert: result.modifiedLine },
+    });
 }

@@ -1,9 +1,10 @@
-import { ViewPlugin, Decoration, DecorationSet, EditorView, ViewUpdate } from '@codemirror/view';
+import { ViewPlugin, Decoration, DecorationSet, EditorView, ViewUpdate, keymap } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
+import { Notice } from 'obsidian';
 import type EntityNotesPlugin from '../main';
 import { PatternMatcher } from '../services/PatternMatcher';
-import { EntityWidget } from './EntityWidget';
+import { EntityWidget, convertLine } from './EntityWidget';
 import { EntityPillWidget } from './EntityPillWidget';
 
 /**
@@ -15,7 +16,7 @@ import { EntityPillWidget } from './EntityPillWidget';
  * an empty CM6 transaction to all open editors after every settings save).
  */
 export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
-    return ViewPlugin.fromClass(
+    const viewPlugin = ViewPlugin.fromClass(
         class {
             decorations: DecorationSet;
             // Instantiate once per plugin registration; PatternMatcher is stateless
@@ -37,6 +38,43 @@ export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
         },
         { decorations: v => v.decorations },
     );
+
+    const enterKeymap = keymap.of([{
+        key: 'Enter',
+        run(view: EditorView): boolean {
+            if (!plugin.settings.convertOnEnter) return false;
+
+            const { state } = view;
+            // Only handle a bare cursor with no selection
+            if (!state.selection.main.empty) return false;
+
+            const cursor = state.selection.main.head;
+            const line = state.doc.lineAt(cursor);
+
+            // Cursor must be at or after the last non-whitespace character
+            if (cursor < line.from + line.text.trimEnd().length) return false;
+
+            // Collect all lines for context computation
+            const docLines: string[] = [];
+            for (let i = 1; i <= state.doc.lines; i++) {
+                docLines.push(state.doc.line(i).text);
+            }
+
+            const context = PatternMatcher.computeContext(docLines, line.number - 1);
+            const match = new PatternMatcher().match(line.text, plugin.settings.entityTypes, context);
+
+            if (match === null) return false;
+
+            convertLine(plugin, match, line.number, view).catch((err: unknown) => {
+                console.error('[entity-notes] Failed to create note:', err);
+                new Notice('Entity notes: could not create note — see console');
+            });
+
+            return true; // prevent the default newline insertion
+        },
+    }]);
+
+    return [viewPlugin, enterKeymap];
 }
 
 function buildDecorations(

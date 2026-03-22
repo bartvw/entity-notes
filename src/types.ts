@@ -11,4 +11,5 @@ export interface EntityType {
 
 export interface PluginSettings {
     entityTypes: EntityType[];
+    convertOnEnter: boolean;
 }
