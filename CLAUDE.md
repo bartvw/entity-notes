@@ -10,19 +10,21 @@ This is conceptually the same as the "inline task to note" flow in the TaskNotes
 
 ```
 entity-notes/
-  main.ts                        # Plugin entry point, registers editor extension and settings tab
+  main.ts                        # Plugin entry point, registers editor extension, settings tab, and post-processor
   manifest.json                  # Obsidian plugin manifest
+  styles.css                     # Plugin styles
   src/
     settings.ts                  # Settings interface, defaults, and SettingTab UI
     types.ts                     # Shared interfaces (EntityType, PluginSettings, etc.)
     editor/
-      EntityButtonPlugin.ts      # CodeMirror 6 ViewPlugin — scans lines, injects widgets
-      EntityWidget.ts            # WidgetType — renders the inline "→ note" button
+      EntityButtonPlugin.ts      # CM6 ViewPlugin — scans lines, injects convert buttons and pills
+      EntityWidget.ts            # CM6 WidgetType — renders the inline "→ note" button
+      EntityPillWidget.ts        # CM6 WidgetType — renders the entity pill badge (Live Preview/Source)
+      keymapUtils.ts             # Pure helpers: isCursorAtLineEnd, findMatchForEnter (testable without CM6)
+      readingViewPill.ts         # Pure DOM helpers for injecting pills in Reading mode
     services/
       NoteCreator.ts             # Creates entity notes with YAML frontmatter
       PatternMatcher.ts          # Parses a line and returns the matching EntityType or null
-  styles/
-    styles.css                   # Plugin styles
   esbuild.config.mjs
   tsconfig.json
   package.json
@@ -58,6 +60,7 @@ interface EntityType {
 
 interface PluginSettings {
   entityTypes: EntityType[];
+  convertOnEnter: boolean;       // trigger conversion on Enter at end of matched line, default false
 }
 ```
 
@@ -80,13 +83,18 @@ import { Range } from "@codemirror/state";
 ```
 
 The `EntityButtonPlugin` is a CM6 `ViewPlugin`. It:
-1. Runs on every `update` where `update.docChanged || update.viewportChanged`
+1. Runs on every `update` where `update.docChanged || update.viewportChanged || settingsVersion changed`
 2. Iterates visible line ranges with `view.visibleRanges`
 3. For each line, calls `PatternMatcher` to check for a matching EntityType
-4. If a match is found, adds a `Decoration.widget` at the end of the line
-5. Returns a `DecorationSet`
+4. If a match is found, adds a `Decoration.widget` (convert button) at the end of the line
+5. Otherwise, checks if the line contains a `[[wikilink]]` to a known entity note and adds a pill `Decoration.widget` after the `]]`
+6. Returns a `DecorationSet`
 
-The `EntityWidget` is a CM6 `WidgetType`. It renders a small button element. On click, it calls back into the plugin to trigger `NoteCreator`.
+The `settingsVersion` counter on the plugin is incremented by `saveSettings()` and also by a `metadataCache.on('changed')` listener registered in `main.ts`. This causes the ViewPlugin to rebuild decorations immediately after settings changes or after a new note is indexed by the cache (so the pill appears right after conversion).
+
+The `EntityButtonPlugin` also registers an Enter keymap at `Prec.highest` (so it runs before Obsidian's own handlers). When `convertOnEnter` is enabled and the cursor is at the end of a matched line, it fires `convertLine` and returns `false` to let the default handler still insert a newline. The synchronous match detection is extracted into `findMatchForEnter` in `keymapUtils.ts` for unit testability.
+
+The `EntityWidget` is a CM6 `WidgetType`. It renders a small button element. On click, it calls `convertLine` (shared with the Enter keymap handler).
 
 Reference: TaskNotes uses this same pattern in `src/editor/InstantConvertButtons.ts` and `src/editor/TaskLinkWidget.ts`.
 
@@ -109,17 +117,25 @@ When the button is clicked, `NoteCreator`:
 
 ## Entity pill
 
-After conversion, `EntityButtonPlugin` also detects lines containing a wikilink to a known entity note (identified by `entity-type` in the note's frontmatter via `app.metadataCache`) and renders a styled pill badge after the link as a CM6 `Decoration.widget`.
+After conversion, the plugin detects wikilinks to known entity notes (identified by `entity-type` in the note's frontmatter via `app.metadataCache`) and renders a styled pill badge after the link. The pill is visual only — never written to the file.
 
-- The pill is visual only — never written to the file
 - Background color comes from `EntityType.color`
 - Label is `EntityType.name` in lowercase
-- Uses `createEl` / DOM API, not `innerHTML`
-- Rendered in the same `update()` cycle as the convert button, on the same `ViewPlugin`
+- Uses DOM API (`createElement` / `createEl`), not `innerHTML`
+
+Two mechanisms, same visual output:
+
+| Mode | Mechanism |
+|------|-----------|
+| Live Preview / Source | `EntityPillWidget` (CM6 `Decoration.widget`) in `EntityButtonPlugin` |
+| Reading | `injectPillsIntoElement` from `readingViewPill.ts`, called by a `MarkdownPostProcessor` registered in `main.ts` |
 
 ---
 
 ## Settings UI
+
+Global settings:
+- **Convert on enter** — boolean toggle (default off); when enabled, pressing Enter at the end of a matched line triggers conversion
 
 The settings tab allows the user to add, edit, and delete entity types. Each entity type exposes:
 - Name (display label)
@@ -140,7 +156,6 @@ On first install, seed the following default entity types:
 | accomplishment | Accomplishment | `#accomplishment`| `Entities/Accomplishments` | `#7ed321` |
 | feedback       | Feedback       | `#feedback`      | `Entities/Feedback`        | `#9b59b6` |
 | project        | Project        | `#project`       | `Entities/Projects`        | `#e74c3c` |
-| task           | Task           | `#task`          | `Entities/Tasks`           | `#1abc9c` |
 
 ---
 
