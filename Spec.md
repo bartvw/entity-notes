@@ -133,7 +133,27 @@ source-note: "[[Daily Note 2026-03-22]]"
 
 ---
 
+## Convert on Enter
+
+When the **Convert on Enter** setting is enabled, pressing Enter at the end of a matched line triggers the same conversion as clicking the button. The inline button remains visible on unconverted lines and continues to work as normal — both methods are available simultaneously.
+
+### Behavior
+
+- The conversion fires when the user presses Enter and the cursor is at or after the last non-whitespace character on a matched line.
+- If the cursor is not at the end of the line (e.g. the user is editing mid-line), Enter behaves normally and no conversion occurs.
+- If the line no longer matches at the moment Enter is pressed (e.g. the trigger tag was just deleted), Enter behaves normally and inserts a newline.
+- The setting is global — it applies to all entity types.
+- Default: **off**.
+
+---
+
 ## Settings
+
+### Global settings
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| Convert on Enter | Boolean | Off | When enabled, pressing Enter at the end of a matched line converts it immediately. |
 
 ### Entity type fields
 Each entity type has:
