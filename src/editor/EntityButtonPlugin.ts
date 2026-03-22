@@ -1,17 +1,79 @@
+import { ViewPlugin, Decoration, DecorationSet, EditorView, ViewUpdate } from '@codemirror/view';
+import { RangeSetBuilder } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
 import type EntityNotesPlugin from '../main';
+import { PatternMatcher } from '../services/PatternMatcher';
+import { EntityWidget } from './EntityWidget';
 
 /**
- * Creates the CodeMirror 6 editor extension that watches for entity trigger
- * tags and injects inline "→ note" buttons next to matching lines.
+ * Creates the CM6 editor extension that watches for entity trigger tags in
+ * visible lines and injects an inline "→ EntityType" button next to each match.
  *
- * TODO: implement as a ViewPlugin that:
- *   1. runs on docChanged / viewportChanged
- *   2. iterates view.visibleRanges
- *   3. calls PatternMatcher for each line
- *   4. adds Decoration.widget(EntityWidget) at end of matching lines
+ * Decorations are rebuilt whenever the document or viewport changes.
+ * `plugin.settings.entityTypes` is read fresh on every rebuild so settings
+ * changes take effect on the next doc/viewport update without reloading.
  */
-export function buildEntityButtonPlugin(_plugin: EntityNotesPlugin): Extension {
-    // Stub — returns an empty extension until the ViewPlugin is implemented.
-    return [];
+export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
+    return ViewPlugin.fromClass(
+        class {
+            decorations: DecorationSet;
+            // Instantiate once per plugin registration; PatternMatcher is stateless
+            // but holding a single instance is cleaner and avoids repeated allocations.
+            private readonly matcher = new PatternMatcher();
+
+            constructor(view: EditorView) {
+                this.decorations = buildDecorations(view, plugin, this.matcher);
+            }
+
+            update(update: ViewUpdate): void {
+                if (update.docChanged || update.viewportChanged) {
+                    this.decorations = buildDecorations(update.view, plugin, this.matcher);
+                }
+            }
+        },
+        { decorations: v => v.decorations },
+    );
+}
+
+function buildDecorations(
+    view: EditorView,
+    plugin: EntityNotesPlugin,
+    matcher: PatternMatcher,
+): DecorationSet {
+    const builder = new RangeSetBuilder<Decoration>();
+    const entityTypes = plugin.settings.entityTypes;
+
+    // Collect all lines once so PatternMatcher.computeContext can scan from
+    // line 0 for each visible line (needed to detect code blocks / frontmatter).
+    const docLines: string[] = [];
+    for (let i = 1; i <= view.state.doc.lines; i++) {
+        docLines.push(view.state.doc.line(i).text);
+    }
+
+    for (const { from, to } of view.visibleRanges) {
+        let pos = from;
+        while (pos <= to) {
+            const line = view.state.doc.lineAt(pos);
+
+            const context = PatternMatcher.computeContext(docLines, line.number - 1);
+            const match = matcher.match(line.text, entityTypes, context);
+
+            if (match !== null) {
+                builder.add(
+                    line.to,
+                    line.to,
+                    Decoration.widget({
+                        widget: new EntityWidget(plugin, match, line.text, line.number),
+                        side: 1, // render after the line content
+                    }),
+                );
+            }
+
+            // Advance past the newline character. Without +1 the last line in
+            // a visible range would loop infinitely (pos === to forever).
+            pos = line.to + 1;
+        }
+    }
+
+    return builder.finish();
 }

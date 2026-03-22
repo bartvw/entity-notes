@@ -1,8 +1,29 @@
-/*
+/* entity-notes: wrapper span inserted by the CM6 widget */
+.entity-notes-plugin {
+    margin-left: 0.4em;
+    display: inline;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* entity-notes: the inline "→ EntityType" convert button */
+.entity-notes-convert-button {
+    display: inline;
+    padding: 0 0.35em;
+    margin: 0;
+    font-size: 0.78em;
+    line-height: 1.4;
+    vertical-align: middle;
+    border: 1px solid var(--interactive-accent);
+    border-radius: 3px;
+    color: var(--interactive-accent);
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    opacity: 0.7;
+    transition: opacity 0.1s ease;
+}
 
-If your plugin does not need CSS, delete this file.
-
-*/
+.entity-notes-convert-button:hover {
+    opacity: 1;
+    background: var(--interactive-accent-hover);
+    color: var(--text-on-accent);
+}
