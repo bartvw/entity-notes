@@ -20,26 +20,6 @@ const PROJECT: EntityType = {
 const FIXED_DATE = '2026-03-22';
 
 // ---------------------------------------------------------------------------
-// Vault mock factory
-// ---------------------------------------------------------------------------
-
-function makeMockApp(overrides: Partial<{
-    getAbstractFileByPath: (path: string) => unknown;
-    createFolder: () => Promise<void>;
-    create: (path: string, content: string) => Promise<TFile>;
-}> = {}): App {
-    const getAbstractFileByPath = overrides.getAbstractFileByPath ?? (() => null);
-    const createFolder = overrides.createFolder ?? vi.fn().mockResolvedValue(undefined);
-    const create = overrides.create ?? vi.fn().mockImplementation(
-        (path: string) => Promise.resolve({ path } as TFile),
-    );
-
-    return {
-        vault: { getAbstractFileByPath, createFolder, create },
-    } as unknown as App;
-}
-
-// ---------------------------------------------------------------------------
 // NoteCreator.deriveTitle
 // ---------------------------------------------------------------------------
 
@@ -320,7 +300,8 @@ describe('NoteCreator.create', () => {
         getAbstractFileByPath = vi.fn().mockReturnValue(null);   // nothing exists by default
         createFolder = vi.fn().mockResolvedValue(undefined);
         create = vi.fn().mockImplementation(
-            (path: string) => Promise.resolve({ path } as TFile),
+            // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
+            (path: string) => Promise.resolve({ path } as unknown as TFile),
         );
         app = {
             vault: { getAbstractFileByPath, createFolder, create },

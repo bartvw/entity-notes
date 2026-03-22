@@ -19,7 +19,8 @@ const DEFAULT_ENTITY_TYPES: EntityType[] = [
 
 function makeMockApp(): { app: App; mockCreate: ReturnType<typeof vi.fn> } {
     const mockCreate = vi.fn().mockImplementation(
-        (path: string) => Promise.resolve({ path } as TFile),
+        // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
+        (path: string) => Promise.resolve({ path } as unknown as TFile),
     );
     const app = {
         vault: {

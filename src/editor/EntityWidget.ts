@@ -47,7 +47,7 @@ export class EntityWidget extends WidgetType {
             e.stopPropagation();
             this.handleClick(view).catch((err: unknown) => {
                 console.error('[entity-notes] Failed to create note:', err);
-                new Notice('entity-notes: could not create note — see console');
+                new Notice('Entity notes: could not create note — see console');
             });
         });
 

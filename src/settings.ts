@@ -29,7 +29,6 @@ export class EntityNotesSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-        containerEl.createEl('h2', { text: 'Entity Notes' });
 
         const entityTypes = this.plugin.settings.entityTypes;
 
@@ -162,6 +161,7 @@ class EntityTypeModal extends Modal {
             .setName('Target folder')
             .setDesc('Vault path where entity notes are created, e.g. Entities/People')
             .addText(text => {
+                // eslint-disable-next-line obsidianmd/ui/sentence-case
                 text.setPlaceholder('Entities/People')
                     .setValue(this.draft.targetFolder)
                     .onChange(v => { this.draft.targetFolder = v; });
@@ -180,7 +180,7 @@ class EntityTypeModal extends Modal {
             .setDesc('Background color of the entity pill badge');
         const colorInput = colorSetting.controlEl.createEl('input', {
             attr: { type: 'color', value: this.draft.color },
-        }) as HTMLInputElement;
+        });
         colorInput.addEventListener('input', () => { this.draft.color = colorInput.value; });
 
         // Frontmatter template ------------------------------------------------
@@ -228,14 +228,14 @@ class EntityTypeModal extends Modal {
             const row = this.templateContainer!.createDiv({ cls: 'entity-notes-template-row' });
 
             const keyInput = row.createEl('input', {
-                attr: { type: 'text', placeholder: 'key' },
-            }) as HTMLInputElement;
+                attr: { type: 'text', placeholder: 'Key' },
+            });
             keyInput.value = pair.key;
             keyInput.addEventListener('input', () => { pair.key = keyInput.value; });
 
             const valueInput = row.createEl('input', {
-                attr: { type: 'text', placeholder: 'value' },
-            }) as HTMLInputElement;
+                attr: { type: 'text', placeholder: 'Value' },
+            });
             valueInput.value = pair.value;
             valueInput.addEventListener('input', () => { pair.value = valueInput.value; });
 
@@ -297,7 +297,10 @@ class EntityTypeModal extends Modal {
 function valueToString(value: unknown): string {
     if (Array.isArray(value)) return value.map(String).join(', ');
     if (value === null || value === undefined) return '';
-    return String(value);
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    }
+    return '';
 }
 
 /**

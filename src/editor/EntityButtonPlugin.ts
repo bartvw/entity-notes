@@ -79,7 +79,7 @@ function buildDecorations(
                     const file = plugin.app.metadataCache.getFirstLinkpathDest(linkText, '');
                     if (file) {
                         const cache = plugin.app.metadataCache.getFileCache(file);
-                        const entityTypeId = cache?.frontmatter?.['entity-type'];
+                        const entityTypeId: unknown = cache?.frontmatter?.['entity-type'];
                         if (typeof entityTypeId === 'string') {
                             const et = entityTypes.find(e => e.id === entityTypeId && e.enabled);
                             if (et) {
