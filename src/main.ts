@@ -16,6 +16,16 @@ export default class EntityNotesPlugin extends Plugin {
         await this.loadSettings();
         this.registerEditorExtension(buildEntityButtonPlugin(this));
         this.addSettingTab(new EntityNotesSettingTab(this.app, this));
+
+        // Rebuild decorations whenever the metadata cache indexes a file so
+        // the entity pill appears immediately after a note is created, without
+        // waiting for the next user keystroke.
+        this.registerEvent(
+            this.app.metadataCache.on('changed', () => {
+                this.settingsVersion++;
+                this.triggerEditorRefresh();
+            }),
+        );
     }
 
     onunload() {}
