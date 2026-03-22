@@ -1,11 +1,12 @@
 import { ViewPlugin, Decoration, DecorationSet, EditorView, ViewUpdate, keymap } from '@codemirror/view';
-import { RangeSetBuilder } from '@codemirror/state';
+import { RangeSetBuilder, Prec } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
 import { Notice } from 'obsidian';
 import type EntityNotesPlugin from '../main';
 import { PatternMatcher } from '../services/PatternMatcher';
 import { EntityWidget, convertLine } from './EntityWidget';
 import { EntityPillWidget } from './EntityPillWidget';
+import { isCursorAtLineEnd } from './keymapUtils';
 
 /**
  * Creates the CM6 editor extension that watches for entity trigger tags in
@@ -52,7 +53,7 @@ export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
             const line = state.doc.lineAt(cursor);
 
             // Cursor must be at or after the last non-whitespace character
-            if (cursor < line.from + line.text.trimEnd().length) return false;
+            if (!isCursorAtLineEnd(cursor, line.from, line.text)) return false;
 
             // Collect all lines for context computation
             const docLines: string[] = [];
@@ -74,7 +75,7 @@ export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
         },
     }]);
 
-    return [viewPlugin, enterKeymap];
+    return [viewPlugin, Prec.highest(enterKeymap)];
 }
 
 function buildDecorations(
