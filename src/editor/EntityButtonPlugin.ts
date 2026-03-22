@@ -9,9 +9,9 @@ import { EntityWidget } from './EntityWidget';
  * Creates the CM6 editor extension that watches for entity trigger tags in
  * visible lines and injects an inline "→ EntityType" button next to each match.
  *
- * Decorations are rebuilt whenever the document or viewport changes.
- * `plugin.settings.entityTypes` is read fresh on every rebuild so settings
- * changes take effect on the next doc/viewport update without reloading.
+ * Decorations are rebuilt on document/viewport changes and also when
+ * plugin.settingsVersion increments (triggered by saveSettings() dispatching
+ * an empty CM6 transaction to all open editors after every settings save).
  */
 export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
     return ViewPlugin.fromClass(
@@ -20,13 +20,16 @@ export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
             // Instantiate once per plugin registration; PatternMatcher is stateless
             // but holding a single instance is cleaner and avoids repeated allocations.
             private readonly matcher = new PatternMatcher();
+            private settingsVersion = plugin.settingsVersion;
 
             constructor(view: EditorView) {
                 this.decorations = buildDecorations(view, plugin, this.matcher);
             }
 
             update(update: ViewUpdate): void {
-                if (update.docChanged || update.viewportChanged) {
+                const settingsChanged = plugin.settingsVersion !== this.settingsVersion;
+                if (update.docChanged || update.viewportChanged || settingsChanged) {
+                    this.settingsVersion = plugin.settingsVersion;
                     this.decorations = buildDecorations(update.view, plugin, this.matcher);
                 }
             }

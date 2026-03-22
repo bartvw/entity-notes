@@ -1,3 +1,20 @@
+/* entity-notes: settings modal — frontmatter template rows */
+.entity-notes-template-rows {
+    margin-bottom: 0.75em;
+}
+
+.entity-notes-template-row {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+    margin-bottom: 0.4em;
+}
+
+.entity-notes-template-row input {
+    flex: 1;
+    min-width: 0;
+}
+
 /* entity-notes: wrapper span inserted by the CM6 widget */
 .entity-notes-plugin {
     margin-left: 0.4em;

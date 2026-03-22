@@ -1,10 +1,16 @@
-import { Plugin } from 'obsidian';
+import { MarkdownView, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, EntityNotesSettingTab } from './settings';
 import type { PluginSettings } from './types';
 import { buildEntityButtonPlugin } from './editor/EntityButtonPlugin';
 
 export default class EntityNotesPlugin extends Plugin {
     settings: PluginSettings;
+    /**
+     * Incremented on every settings save. The ViewPlugin checks this on each
+     * CM6 transaction and rebuilds decorations when it changes, making settings
+     * take effect without waiting for a document or viewport change.
+     */
+    settingsVersion = 0;
 
     async onload() {
         await this.loadSettings();
@@ -24,5 +30,24 @@ export default class EntityNotesPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+        this.settingsVersion++;
+        this.triggerEditorRefresh();
+    }
+
+    /**
+     * Dispatches an empty CM6 transaction to every open markdown editor.
+     * This causes the ViewPlugin's update() to run, where it detects the
+     * incremented settingsVersion and rebuilds decorations immediately.
+     */
+    private triggerEditorRefresh(): void {
+        this.app.workspace.getLeavesOfType('markdown').forEach(leaf => {
+            if (leaf.view instanceof MarkdownView) {
+                // editor.cm is the underlying CM6 EditorView. It is not part of
+                // Obsidian's published TypeScript types but is stable in practice
+                // and widely used by the plugin ecosystem for exactly this purpose.
+                const cm = (leaf.view.editor as unknown as { cm?: { dispatch(tr: object): void } }).cm;
+                cm?.dispatch({});
+            }
+        });
     }
 }
