@@ -30,7 +30,11 @@ All defaults can be edited or deleted, and you can add your own entity types.
 
 ## Settings
 
-Each entity type has:
+### Global
+
+- **Convert on enter** (default: off) — when enabled, pressing Enter at the end of a matched line triggers the conversion immediately, without clicking the button. A newline is still inserted as normal. The button remains visible and continues to work alongside this setting.
+
+### Per entity type
 
 - **Name** — display label shown on the button and pill
 - **Trigger tag** — the hashtag that activates detection (e.g. `#person`)
