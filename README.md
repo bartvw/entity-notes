@@ -79,6 +79,16 @@ npm run dev   # watch mode
 
 Copy (or symlink) the folder into `<vault>/.obsidian/plugins/entity-notes/` and enable it in Obsidian.
 
+## FAQ
+
+**Does it work alongside [TaskNotes](https://github.com/callumalpass/tasknotes)?**
+Yes — it's designed to complement TaskNotes. Just don't configure `#task` as an entity type in this plugin, since TaskNotes already owns that tag.
+
+**Does it work with [Templater](https://github.com/SilentVoid13/Templater)?**
+Yes. Enable the "Trigger Templater on new file creation" setting in Templater and it will apply your template to each newly created entity note.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
