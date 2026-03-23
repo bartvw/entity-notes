@@ -6,13 +6,13 @@ import type { EntityType } from '../types';
 const PROJECT: EntityType = {
     id: 'project', name: 'Project', triggerTag: '#project',
     targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true,
-    frontmatterTemplate: {},
+    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
 };
 
 const PERSON: EntityType = {
     id: 'person', name: 'Person', triggerTag: '#person',
     targetFolder: 'Entities/People', color: '#4a90d9', enabled: true,
-    frontmatterTemplate: {},
+    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
 };
 
 // ---------------------------------------------------------------------------

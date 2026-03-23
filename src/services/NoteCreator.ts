@@ -120,15 +120,15 @@ export class NoteCreator {
             tags.push(templateTags);
         }
 
-        const lines: string[] = [
-            '---',
-            `title: "${escapeYamlString(title)}"`,
+        const lines: string[] = ['---'];
+        if (entityType.includeTitle) lines.push(`title: "${escapeYamlString(title)}"`);
+        lines.push(
             `entity-type: "${entityType.id}"`,
             'tags:',
             ...tags.map(t => `  - ${t}`),
             `created: "${date}"`,
-            `source-note: "[[${sourceNoteName}]]"`,
-        ];
+        );
+        if (entityType.includeSourceNote) lines.push(`source-note: "[[${sourceNoteName}]]"`);
 
         // Append non-standard template fields in insertion order
         for (const [key, value] of Object.entries(entityType.frontmatterTemplate)) {

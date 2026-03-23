@@ -8,11 +8,13 @@ import type { EntityType } from '../types';
 
 const PERSON: EntityType = {
     id: 'person', name: 'Person', triggerTag: '#person',
-    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true,
+    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
 };
 const IDEA: EntityType = {
     id: 'idea', name: 'Idea', triggerTag: '#idea',
-    targetFolder: 'Entities/Ideas', color: '#f5a623', enabled: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/Ideas', color: '#f5a623', enabled: true,
+    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
 };
 const DISABLED: EntityType = {
     ...PERSON, id: 'disabled', name: 'Disabled', triggerTag: '#disabled', enabled: false,

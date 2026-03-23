@@ -3,11 +3,11 @@ import type EntityNotesPlugin from './main';
 import type { EntityType, PluginSettings } from './types';
 
 export const DEFAULT_ENTITY_TYPES: EntityType[] = [
-    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, frontmatterTemplate: {} },
-    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, frontmatterTemplate: {} },
-    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, frontmatterTemplate: {} },
-    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, frontmatterTemplate: {} },
-    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
+    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
 ];
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -121,6 +121,8 @@ class EntityTypeModal extends Modal {
                 targetFolder: '',
                 color: '#7c3aed',
                 enabled: true,
+                includeTitle: true,
+                includeSourceNote: true,
                 frontmatterTemplate: {},
             };
             this.templatePairs = [];
@@ -187,6 +189,22 @@ class EntityTypeModal extends Modal {
                     .onChange(v => { this.draft.enabled = v; });
             });
 
+        new Setting(el)
+            .setName('Include title')
+            .setDesc('Write the title field into the created note\'s frontmatter')
+            .addToggle(toggle => {
+                toggle.setValue(this.draft.includeTitle)
+                    .onChange(v => { this.draft.includeTitle = v; });
+            });
+
+        new Setting(el)
+            .setName('Include source note')
+            .setDesc('Write the source-note field into the created note\'s frontmatter')
+            .addToggle(toggle => {
+                toggle.setValue(this.draft.includeSourceNote)
+                    .onChange(v => { this.draft.includeSourceNote = v; });
+            });
+
         const colorSetting = new Setting(el)
             .setName('Color')
             .setDesc('Background color of the entity pill badge');
@@ -200,8 +218,7 @@ class EntityTypeModal extends Modal {
         new Setting(el).setName('Frontmatter template').setHeading();
         el.createEl('p', {
             text: 'Extra fields written into every note created by this entity type. '
-                + 'Standard fields (title, entity-type, tags, created, source-note) are '
-                + 'always included and cannot be overridden here. '
+                + 'Standard fields (entity-type, tags, created) are always included and cannot be overridden here. '
                 + 'For the tags key, enter a comma-separated list to add multiple tags.',
             cls: 'setting-item-description',
         });

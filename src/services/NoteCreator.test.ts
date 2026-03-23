@@ -10,12 +10,14 @@ import type { App } from 'obsidian';
 
 const PERSON: EntityType = {
     id: 'person', name: 'Person', triggerTag: '#person',
-    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true,
+    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
 };
 
 const PROJECT: EntityType = {
     id: 'project', name: 'Project', triggerTag: '#project',
-    targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true,
+    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
 };
 
 const FIXED_DATE = '2026-03-22';
@@ -261,6 +263,34 @@ describe('NoteCreator.buildFrontmatter', () => {
         const fm = NoteCreator.buildFrontmatter('T', PERSON, 'N', FIXED_DATE);
         expect(fm.startsWith('---\n')).toBe(true);
         expect(fm.endsWith('\n---')).toBe(true);
+    });
+
+    it('omits title when includeTitle is false', () => {
+        const et: EntityType = { ...PERSON, includeTitle: false };
+        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        expect(fm).not.toContain('title:');
+        expect(fm).toContain('entity-type:');
+    });
+
+    it('omits source-note when includeSourceNote is false', () => {
+        const et: EntityType = { ...PERSON, includeSourceNote: false };
+        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        expect(fm).not.toContain('source-note:');
+        expect(fm).toContain('created:');
+    });
+
+    it('omits both title and source-note when both flags are false', () => {
+        const et: EntityType = { ...PERSON, includeTitle: false, includeSourceNote: false };
+        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        expect(fm).not.toContain('title:');
+        expect(fm).not.toContain('source-note:');
+    });
+
+    it('includes title and source-note when both flags are true', () => {
+        const et: EntityType = { ...PERSON, includeTitle: true, includeSourceNote: true };
+        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        expect(fm).toContain('title: "My note"');
+        expect(fm).toContain('source-note: "[[Source]]"');
     });
 });
 

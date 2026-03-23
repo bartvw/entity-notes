@@ -5,6 +5,8 @@ export interface EntityType {
     targetFolder: string;
     color: string;
     enabled: boolean;
+    includeTitle: boolean;
+    includeSourceNote: boolean;
     frontmatterTemplate: Record<string, unknown>;
     basesFile?: string;
 }

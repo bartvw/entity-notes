@@ -7,11 +7,11 @@ import type { EntityType } from '../types';
 
 // Mirror the default entity types without importing settings.ts (which requires obsidian)
 const DEFAULT_ENTITY_TYPES: EntityType[] = [
-    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, frontmatterTemplate: {} },
-    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, frontmatterTemplate: {} },
-    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, frontmatterTemplate: {} },
-    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, frontmatterTemplate: {} },
-    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
+    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
 ];
 
 // ---------------------------------------------------------------------------

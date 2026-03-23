@@ -65,16 +65,16 @@ If a line contains multiple trigger tags from different entity types, match only
 - If the target folder does not exist, create it
 
 ### Frontmatter
-Every created note gets the following YAML frontmatter:
+Every created note gets YAML frontmatter containing the following fields. `title` and `source-note` are optional and controlled by per-entity-type toggles (both default to on):
 
 ```yaml
 ---
-title: "<derived from line text>"
+title: "<derived from line text>"          # omitted when includeTitle is false
 entity-type: "<EntityType.id>"
 tags:
   - "<EntityType.id>"
 created: "<YYYY-MM-DD>"
-source-note: "[[OriginalNoteName]]"
+source-note: "[[OriginalNoteName]]"        # omitted when includeSourceNote is false
 <...fields from EntityType.frontmatterTemplate...>
 ---
 ```
@@ -174,6 +174,8 @@ Each entity type has:
 - `targetFolder` — vault path for created notes (e.g. `Entities/People`)
 - `color` — background color for the entity pill (e.g. `#4a90d9`); a sensible default is provided for each built-in type
 - `enabled` — boolean, defaults to true; disabled entity types are ignored by the editor plugin
+- `includeTitle` — boolean, defaults to true; when false, the `title` field is omitted from created note frontmatter
+- `includeSourceNote` — boolean, defaults to true; when false, the `source-note` field is omitted from created note frontmatter
 - `frontmatterTemplate` — key-value pairs added to created note frontmatter, defaults to empty
 - `basesFile` — reserved for future use; not exposed in the UI and not used in v1
 
@@ -181,6 +183,7 @@ Each entity type has:
 - Entity types are listed with their name, trigger tag, and color pill visible
 - Each entry has an enabled toggle, an edit button, and a delete button
 - Editing an entity type exposes a color picker for the pill color
+- Editing an entity type exposes toggles for **Include title** and **Include source note** (both default to on)
 - A button allows adding a new entity type
 - Deleting an entity type does not delete any notes already created by it
 - Changes take effect immediately without restarting the plugin
