@@ -37,9 +37,21 @@ jobs:
             - run: npm ci
             - run: npm run build
 
+            - name: Extract changelog for ${{ github.ref_name }}
+              id: changelog
+              run: |
+                  body=$(awk '/^## \['"${GITHUB_REF_NAME}"'\]/{found=1; next} found && /^## \[/{exit} found{print}' CHANGELOG.md)
+                  {
+                      echo "body<<EOF"
+                      echo "$body"
+                      echo "EOF"
+                  } >> "$GITHUB_OUTPUT"
+
             - name: Create release and upload assets
               uses: softprops/action-gh-release@v2
               with:
+                  body: ${{ steps.changelog.outputs.body }}
+                  generate_release_notes: true
                   files: |
                       main.js
                       manifest.json
