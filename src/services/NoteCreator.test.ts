@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NoteCreator } from './NoteCreator';
 import type { EntityType } from '../types';
-import type { App, TFile } from 'obsidian';
+import { TFile } from 'obsidian';
+import type { App } from 'obsidian';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -310,8 +311,7 @@ describe('NoteCreator.create', () => {
         getAbstractFileByPath = vi.fn().mockReturnValue(null);   // nothing exists by default
         createFolder = vi.fn().mockResolvedValue(undefined);
         create = vi.fn().mockImplementation(
-            // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
-            (path: string) => Promise.resolve({ path } as unknown as TFile),
+            (path: string) => { const f = new TFile(); f.path = path; return Promise.resolve(f); },
         );
         app = {
             vault: { getAbstractFileByPath, createFolder, create },

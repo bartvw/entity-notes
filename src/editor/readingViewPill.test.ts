@@ -59,8 +59,7 @@ function makeContainer(...links: HTMLAnchorElement[]): HTMLElement {
 describe('injectPillsIntoElement', () => {
     it('does nothing when there are no internal links', () => {
         const el = document.createElement('div');
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
-        el.textContent = 'plain text';
+        el.textContent = 'Plain text';
         injectPillsIntoElement(el, () => PROJECT);
         expect(el.querySelectorAll('.entity-notes-pill').length).toBe(0);
     });
@@ -111,20 +110,18 @@ describe('injectPillsIntoElement', () => {
     it('falls back to link text content when data-href is absent', () => {
         const a = document.createElement('a');
         a.className = 'internal-link';
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
-        a.textContent = 'Fallback Note';
+        a.textContent = 'Fallback note';
         const el = makeContainer(a);
 
         let resolved = '';
         injectPillsIntoElement(el, (target) => { resolved = target; return null; });
-        expect(resolved).toBe('Fallback Note');
+        expect(resolved).toBe('Fallback note');
     });
 
     it('ignores links that are not internal-link class', () => {
         const a = document.createElement('a');
         a.href = 'https://example.com';
-        // eslint-disable-next-line obsidianmd/ui/sentence-case
-        a.textContent = 'external';
+        a.textContent = 'External';
         const el = makeContainer(a);
 
         injectPillsIntoElement(el, () => PROJECT);

@@ -15,3 +15,8 @@ export function normalizePath(path: string): string {
         .replace(/[/\\]+/g, '/')
         .replace(/^\/|\/$/g, '');
 }
+
+/** Minimal TFile stub for use in mocks. */
+export class TFile {
+    path: string = '';
+}

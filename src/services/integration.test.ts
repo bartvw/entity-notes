@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { PatternMatcher } from './PatternMatcher';
 import { NoteCreator } from './NoteCreator';
-import type { App, TFile } from 'obsidian';
+import { TFile } from 'obsidian';
+import type { App } from 'obsidian';
 import type { EntityType } from '../types';
 
 // Mirror the default entity types without importing settings.ts (which requires obsidian)
@@ -19,8 +20,7 @@ const DEFAULT_ENTITY_TYPES: EntityType[] = [
 
 function makeMockApp(): { app: App; mockCreate: ReturnType<typeof vi.fn> } {
     const mockCreate = vi.fn().mockImplementation(
-        // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast
-        (path: string) => Promise.resolve({ path } as unknown as TFile),
+        (path: string) => { const f = new TFile(); f.path = path; return Promise.resolve(f); },
     );
     const app = {
         vault: {

@@ -34,7 +34,7 @@ export class NoteCreator {
         const targetFolder = normalizePath(entityType.targetFolder);
         await this.ensureFolder(targetFolder);
 
-        const { filePath, title } = await this.resolveFilePath(targetFolder, rawTitle);
+        const { filePath, title } = this.resolveFilePath(targetFolder, rawTitle);
         const content = NoteCreator.buildContent(title, entityType, sourceNoteName, date);
         const file = await this.app.vault.create(filePath, content);
         const modifiedLine = NoteCreator.buildModifiedLine(lineText, entityType.triggerTag, title);
@@ -173,10 +173,10 @@ export class NoteCreator {
      * Resolves a collision-free file path within targetFolder.
      * If `<title>.md` exists, tries `<title> 2.md`, `<title> 3.md`, …
      */
-    private async resolveFilePath(
+    private resolveFilePath(
         targetFolder: string,
         title: string,
-    ): Promise<{ filePath: string; title: string }> {
+    ): { filePath: string; title: string } {
         const base = `${targetFolder}/${title}`;
         if (!this.app.vault.getAbstractFileByPath(`${base}.md`)) {
             return { filePath: `${base}.md`, title };
