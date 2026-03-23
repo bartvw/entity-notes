@@ -2,7 +2,7 @@ import { normalizePath } from 'obsidian';
 import type { App, TFile } from 'obsidian';
 import type { EntityType, PluginSettings } from '../types';
 
-type FrontmatterOptions = Pick<PluginSettings, 'includeTitle' | 'includeEntityType' | 'includeTags' | 'includeCreated' | 'includeSourceNote'>;
+type FrontmatterOptions = Pick<PluginSettings, 'titleField' | 'entityTypeField' | 'tagsField' | 'createdField' | 'sourceNoteField'>;
 
 export interface NoteCreatorResult {
     /** The created TFile. */
@@ -112,11 +112,14 @@ export class NoteCreator {
         date: string,
         options: FrontmatterOptions,
     ): string {
-        const STANDARD_KEYS = new Set(['title', 'entity-type', 'tags', 'created', 'source-note']);
+        const STANDARD_KEYS = new Set([
+            options.titleField.name, options.entityTypeField.name, options.tagsField.name,
+            options.createdField.name, options.sourceNoteField.name,
+        ]);
 
         // Build tags: seed with entity id, then merge from template
         const tags: string[] = [entityType.id];
-        const templateTags = entityType.frontmatterTemplate['tags'];
+        const templateTags = entityType.frontmatterTemplate[options.tagsField.name] ?? entityType.frontmatterTemplate['tags'];
         if (Array.isArray(templateTags)) {
             for (const t of templateTags) {
                 if (typeof t === 'string' && !tags.includes(t)) tags.push(t);
@@ -126,13 +129,13 @@ export class NoteCreator {
         }
 
         const lines: string[] = ['---'];
-        if (options.includeTitle)      lines.push(`title: "${escapeYamlString(title)}"`);
-        if (options.includeEntityType) lines.push(`entity-type: "${entityType.id}"`);
-        if (options.includeTags) {
-            lines.push('tags:', ...tags.map(t => `  - ${t}`));
+        if (options.titleField.enabled)      lines.push(`${options.titleField.name}: "${escapeYamlString(title)}"`);
+        if (options.entityTypeField.enabled) lines.push(`${options.entityTypeField.name}: "${entityType.id}"`);
+        if (options.tagsField.enabled) {
+            lines.push(`${options.tagsField.name}:`, ...tags.map(t => `  - ${t}`));
         }
-        if (options.includeCreated)    lines.push(`created: "${date}"`);
-        if (options.includeSourceNote) lines.push(`source-note: "[[${sourceNoteName}]]"`);
+        if (options.createdField.enabled)    lines.push(`${options.createdField.name}: "${date}"`);
+        if (options.sourceNoteField.enabled) lines.push(`${options.sourceNoteField.name}: "[[${sourceNoteName}]]"`);
 
         // Append non-standard template fields in insertion order
         for (const [key, value] of Object.entries(entityType.frontmatterTemplate)) {

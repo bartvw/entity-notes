@@ -55,8 +55,11 @@ describe('isCursorAtLineEnd', () => {
 
 const PROJECT_SETTINGS: PluginSettings = {
     convertOnEnter: true,
-    includeTitle: true, includeEntityType: true, includeTags: true,
-    includeCreated: true, includeSourceNote: true,
+    titleField:      { enabled: true, name: 'title' },
+    entityTypeField: { enabled: true, name: 'entity-type' },
+    tagsField:       { enabled: true, name: 'tags' },
+    createdField:    { enabled: true, name: 'created' },
+    sourceNoteField: { enabled: true, name: 'source-note' },
     entityTypes: [
         { id: 'project', name: 'Project', triggerTag: '#project',
           targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true,

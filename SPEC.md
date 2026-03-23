@@ -65,23 +65,23 @@ If a line contains multiple trigger tags from different entity types, match only
 - If the target folder does not exist, create it
 
 ### Frontmatter
-Every created note gets YAML frontmatter. All five standard fields are optional and controlled by global toggles in the plugin settings (all default to on):
+Every created note gets YAML frontmatter. All five standard fields are optional and configurable via global settings: each field has a **name** (the YAML property key written to the file) and an **enabled** toggle (default on). The default names are shown below:
 
 ```yaml
 ---
-title: "<derived from line text>"          # omitted when includeTitle is false
-entity-type: "<EntityType.id>"             # omitted when includeEntityType is false
-tags:                                      # omitted when includeTags is false
+title: "<derived from line text>"          # name configurable; omitted when disabled
+entity-type: "<EntityType.id>"             # name configurable; omitted when disabled
+tags:                                      # name configurable; omitted when disabled
   - "<EntityType.id>"
-created: "<YYYY-MM-DD>"                    # omitted when includeCreated is false
-source-note: "[[OriginalNoteName]]"        # omitted when includeSourceNote is false
+created: "<YYYY-MM-DD>"                    # name configurable; omitted when disabled
+source-note: "[[OriginalNoteName]]"        # name configurable; omitted when disabled
 <...fields from EntityType.frontmatterTemplate...>
 ---
 ```
 
-The `tags` list is seeded with the entity type id. If `frontmatterTemplate` includes additional tags, they are merged into the list rather than replacing it. If a template field conflicts with any other standard field name, the standard field wins.
+The `tags` list is seeded with the entity type id. If `frontmatterTemplate` includes additional tags, they are merged into the list rather than replacing it. If a template field's key matches the configured name of any standard field, the standard field wins.
 
-> **Note:** The entity pill relies on `entity-type` being present in the created note's frontmatter. Disabling `includeEntityType` will prevent pills from appearing for all newly created entity notes.
+> **Note:** The entity pill relies on the `entity-type` field (or whatever name it is configured to) being present in the created note's frontmatter. Disabling this field will prevent pills from appearing for all newly created entity notes.
 
 ### Note body
 Empty after the frontmatter block. The user fills it in.
@@ -167,11 +167,20 @@ When the **Convert on Enter** setting is enabled, pressing Enter at the end of a
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | Convert on Enter | Boolean | Off | When enabled, pressing Enter at the end of a matched line converts it immediately. |
-| Include title | Boolean | On | When off, the `title` field is omitted from all created note frontmatter. |
-| Include entity-type | Boolean | On | When off, the `entity-type` field is omitted; **disabling this will prevent pills from appearing** for all newly created entity notes. |
-| Include tags | Boolean | On | When off, the `tags` field is omitted from all created note frontmatter. |
-| Include created | Boolean | On | When off, the `created` field is omitted from all created note frontmatter. |
-| Include source-note | Boolean | On | When off, the `source-note` field is omitted from all created note frontmatter. |
+
+#### Frontmatter fields
+
+Each of the five standard frontmatter fields has two configurable properties:
+
+| Field | Name (default) | Enabled (default) | Notes |
+|-------|---------------|-------------------|-------|
+| Title | `title` | On | The note title derived from the source line. |
+| Entity type | `entity-type` | On | **Required for entity pills to appear.** Disabling this field prevents pills from appearing for all newly created entity notes. |
+| Tags | `tags` | On | A tags list seeded with the entity type id. |
+| Created | `created` | On | The date the note was created (YYYY-MM-DD). |
+| Source note | `source-note` | On | A wikilink back to the note where the entity was first mentioned. |
+
+The **name** is the YAML property key written into the created note. Changing it (e.g. `title` → `note-title`) affects all notes created after the change; existing notes are not updated.
 
 ### Entity type fields
 Each entity type has:
@@ -185,6 +194,9 @@ Each entity type has:
 - `basesFile` — reserved for future use; not exposed in the UI and not used in v1
 
 ### Settings UI behavior
+- The five frontmatter fields are displayed as a table with three columns: description, field name input, and enabled toggle
+- Disabling a field greys out its name input
+- Changing a field name takes effect for all notes created after saving; existing notes are not modified
 - Entity types are listed with their name, trigger tag, and color pill visible
 - Each entry has an enabled toggle, an edit button, and a delete button
 - Editing an entity type exposes a color picker for the pill color

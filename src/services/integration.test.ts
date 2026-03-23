@@ -14,9 +14,12 @@ const DEFAULT_ENTITY_TYPES: EntityType[] = [
     { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
 ];
 
-const ALL_ON: Pick<PluginSettings, 'includeTitle' | 'includeEntityType' | 'includeTags' | 'includeCreated' | 'includeSourceNote'> = {
-    includeTitle: true, includeEntityType: true, includeTags: true,
-    includeCreated: true, includeSourceNote: true,
+const ALL_ON: Pick<PluginSettings, 'titleField' | 'entityTypeField' | 'tagsField' | 'createdField' | 'sourceNoteField'> = {
+    titleField:      { enabled: true, name: 'title' },
+    entityTypeField: { enabled: true, name: 'entity-type' },
+    tagsField:       { enabled: true, name: 'tags' },
+    createdField:    { enabled: true, name: 'created' },
+    sourceNoteField: { enabled: true, name: 'source-note' },
 };
 
 // ---------------------------------------------------------------------------

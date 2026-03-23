@@ -9,12 +9,17 @@ export interface EntityType {
     basesFile?: string;
 }
 
+export interface FrontmatterField {
+    enabled: boolean;
+    name: string;
+}
+
 export interface PluginSettings {
     entityTypes: EntityType[];
     convertOnEnter: boolean;
-    includeTitle: boolean;
-    includeEntityType: boolean;
-    includeTags: boolean;
-    includeCreated: boolean;
-    includeSourceNote: boolean;
+    titleField: FrontmatterField;
+    entityTypeField: FrontmatterField;
+    tagsField: FrontmatterField;
+    createdField: FrontmatterField;
+    sourceNoteField: FrontmatterField;
 }

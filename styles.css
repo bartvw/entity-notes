@@ -1,3 +1,42 @@
+/* entity-notes: settings tab — frontmatter fields table */
+.entity-notes-frontmatter-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--size-4-4, 16px);
+}
+
+.entity-notes-frontmatter-table th,
+.entity-notes-frontmatter-table td {
+    padding: 6px 8px;
+    vertical-align: middle;
+}
+
+.entity-notes-frontmatter-table th {
+    text-align: left;
+    font-size: var(--font-smaller);
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.entity-notes-frontmatter-table td:last-child {
+    text-align: right;
+}
+
+.entity-notes-field-label {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.entity-notes-field-name-input {
+    width: 100%;
+}
+
+.entity-notes-field-name-input:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* entity-notes: settings modal — frontmatter template rows */
 .entity-notes-template-rows {
     margin-bottom: 0.75em;

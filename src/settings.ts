@@ -1,4 +1,4 @@
-import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Notice, PluginSettingTab, Setting, ToggleComponent } from 'obsidian';
 import type EntityNotesPlugin from './main';
 import type { EntityType, PluginSettings } from './types';
 
@@ -13,11 +13,11 @@ export const DEFAULT_ENTITY_TYPES: EntityType[] = [
 export const DEFAULT_SETTINGS: PluginSettings = {
     entityTypes: DEFAULT_ENTITY_TYPES,
     convertOnEnter: false,
-    includeTitle: true,
-    includeEntityType: true,
-    includeTags: true,
-    includeCreated: true,
-    includeSourceNote: true,
+    titleField:      { enabled: true, name: 'title' },
+    entityTypeField: { enabled: true, name: 'entity-type' },
+    tagsField:       { enabled: true, name: 'tags' },
+    createdField:    { enabled: true, name: 'created' },
+    sourceNoteField: { enabled: true, name: 'source-note' },
 };
 
 // ---------------------------------------------------------------------------
@@ -49,62 +49,7 @@ export class EntityNotesSettingTab extends PluginSettingTab {
 
         new Setting(containerEl).setName('Frontmatter fields').setHeading();
 
-        /* eslint-disable obsidianmd/ui/sentence-case -- setting names are YAML property names, not UI sentences */
-        new Setting(containerEl)
-            .setName('title')
-            .setDesc('The note title derived from the source line')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.includeTitle)
-                .onChange(async value => {
-                    this.plugin.settings.includeTitle = value;
-                    await this.plugin.saveSettings();
-                }),
-            );
-
-        new Setting(containerEl)
-            .setName('entity-type')
-            .setDesc('The entity-type property — required for entity pills to appear')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.includeEntityType)
-                .onChange(async value => {
-                    this.plugin.settings.includeEntityType = value;
-                    await this.plugin.saveSettings();
-                }),
-            );
-
-        new Setting(containerEl)
-            .setName('tags')
-            .setDesc('A tags list seeded with the entity type id')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.includeTags)
-                .onChange(async value => {
-                    this.plugin.settings.includeTags = value;
-                    await this.plugin.saveSettings();
-                }),
-            );
-
-        new Setting(containerEl)
-            .setName('created')
-            .setDesc('The date the note was created (YYYY-MM-DD)')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.includeCreated)
-                .onChange(async value => {
-                    this.plugin.settings.includeCreated = value;
-                    await this.plugin.saveSettings();
-                }),
-            );
-
-        new Setting(containerEl)
-            .setName('source-note')
-            .setDesc('A wikilink back to the note where the entity was first mentioned')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.includeSourceNote)
-                .onChange(async value => {
-                    this.plugin.settings.includeSourceNote = value;
-                    await this.plugin.saveSettings();
-                }),
-            );
-        /* eslint-enable obsidianmd/ui/sentence-case */
+        this.buildFrontmatterTable(containerEl);
 
         const entityTypes = this.plugin.settings.entityTypes;
 
@@ -151,6 +96,62 @@ export class EntityNotesSettingTab extends PluginSettingTab {
                     new EntityTypeModal(this.app, this.plugin, null, () => this.display()).open();
                 }),
             );
+    }
+
+    private buildFrontmatterTable(containerEl: HTMLElement): void {
+        type FieldKey = 'titleField' | 'entityTypeField' | 'tagsField' | 'createdField' | 'sourceNoteField';
+        const rows: Array<{ label: string; desc: string; key: FieldKey }> = [
+            { label: 'Title',       desc: 'The note title derived from the source line',             key: 'titleField' },
+            { label: 'Entity type', desc: 'Required for entity pills to appear',                     key: 'entityTypeField' },
+            { label: 'Tags',        desc: 'A tags list seeded with the entity type id',              key: 'tagsField' },
+            { label: 'Created',     desc: 'The date the note was created (YYYY-MM-DD)',              key: 'createdField' },
+            { label: 'Source note', desc: 'A wikilink back to the note where it was first mentioned', key: 'sourceNoteField' },
+        ];
+
+        const table = containerEl.createEl('table', { cls: 'entity-notes-frontmatter-table' });
+        const thead = table.createEl('thead');
+        const headerRow = thead.createEl('tr');
+        headerRow.createEl('th', { text: 'Property' });
+        headerRow.createEl('th', { text: 'Field name' });
+        headerRow.createEl('th', { text: 'Include' });
+
+        const tbody = table.createEl('tbody');
+
+        for (const row of rows) {
+            const field = this.plugin.settings[row.key];
+            const tr = tbody.createEl('tr');
+
+            // Column 1: label + description
+            const tdDesc = tr.createEl('td');
+            tdDesc.createEl('div', { text: row.label, cls: 'entity-notes-field-label' });
+            tdDesc.createEl('div', { text: row.desc, cls: 'setting-item-description' });
+
+            // Column 2: editable field name
+            const tdName = tr.createEl('td');
+            const nameInput = tdName.createEl('input', { cls: 'entity-notes-field-name-input' });
+            nameInput.type = 'text';
+            nameInput.value = field.name;
+            nameInput.disabled = !field.enabled;
+            nameInput.addEventListener('change', async () => {
+                const trimmed = nameInput.value.trim();
+                if (trimmed) {
+                    field.name = trimmed;
+                    await this.plugin.saveSettings();
+                } else {
+                    nameInput.value = field.name; // revert empty input
+                }
+            });
+
+            // Column 3: toggle
+            const tdToggle = tr.createEl('td');
+            new ToggleComponent(tdToggle)
+                .setValue(field.enabled)
+                .onChange(async (value) => {
+                    field.enabled = value;
+                    nameInput.disabled = !value;
+                    await this.plugin.saveSettings();
+                });
+        }
     }
 }
 

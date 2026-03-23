@@ -18,10 +18,13 @@ const PROJECT: EntityType = {
     targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true, frontmatterTemplate: {},
 };
 
-// Default options with all fields enabled — used as the base for most tests.
-const ALL_ON: Pick<PluginSettings, 'includeTitle' | 'includeEntityType' | 'includeTags' | 'includeCreated' | 'includeSourceNote'> = {
-    includeTitle: true, includeEntityType: true, includeTags: true,
-    includeCreated: true, includeSourceNote: true,
+// Default options with all fields enabled and default names — used as the base for most tests.
+const ALL_ON: Pick<PluginSettings, 'titleField' | 'entityTypeField' | 'tagsField' | 'createdField' | 'sourceNoteField'> = {
+    titleField:      { enabled: true, name: 'title' },
+    entityTypeField: { enabled: true, name: 'entity-type' },
+    tagsField:       { enabled: true, name: 'tags' },
+    createdField:    { enabled: true, name: 'created' },
+    sourceNoteField: { enabled: true, name: 'source-note' },
 };
 
 const FIXED_DATE = '2026-03-22';
@@ -269,51 +272,96 @@ describe('NoteCreator.buildFrontmatter', () => {
         expect(fm.endsWith('\n---')).toBe(true);
     });
 
-    it('omits title when includeTitle is false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeTitle: false });
+    it('omits title when disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, titleField: { enabled: false, name: 'title' } });
         expect(fm).not.toContain('title:');
         expect(fm).toContain('entity-type:');
     });
 
-    it('omits source-note when includeSourceNote is false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeSourceNote: false });
+    it('omits source-note when disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, sourceNoteField: { enabled: false, name: 'source-note' } });
         expect(fm).not.toContain('source-note:');
         expect(fm).toContain('created:');
     });
 
-    it('omits both title and source-note when both flags are false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeTitle: false, includeSourceNote: false });
+    it('omits both title and source-note when both are disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, titleField: { enabled: false, name: 'title' }, sourceNoteField: { enabled: false, name: 'source-note' } });
         expect(fm).not.toContain('title:');
         expect(fm).not.toContain('source-note:');
     });
 
-    it('includes title and source-note when both flags are true', () => {
+    it('includes title and source-note when both are enabled', () => {
         const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, ALL_ON);
         expect(fm).toContain('title: "My note"');
         expect(fm).toContain('source-note: "[[Source]]"');
     });
 
-    it('omits entity-type when includeEntityType is false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeEntityType: false });
+    it('omits entity-type when disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, entityTypeField: { enabled: false, name: 'entity-type' } });
         expect(fm).not.toContain('entity-type:');
         expect(fm).toContain('created:');
     });
 
-    it('omits tags when includeTags is false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeTags: false });
+    it('omits tags when disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, tagsField: { enabled: false, name: 'tags' } });
         expect(fm).not.toContain('tags:');
         expect(fm).toContain('entity-type:');
     });
 
-    it('omits created when includeCreated is false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeCreated: false });
+    it('omits created when disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, createdField: { enabled: false, name: 'created' } });
         expect(fm).not.toContain('created:');
         expect(fm).toContain('entity-type:');
     });
 
-    it('omits all fields when all flags are false', () => {
-        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { includeTitle: false, includeEntityType: false, includeTags: false, includeCreated: false, includeSourceNote: false });
+    it('omits all fields when all are disabled', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, {
+            titleField:      { enabled: false, name: 'title' },
+            entityTypeField: { enabled: false, name: 'entity-type' },
+            tagsField:       { enabled: false, name: 'tags' },
+            createdField:    { enabled: false, name: 'created' },
+            sourceNoteField: { enabled: false, name: 'source-note' },
+        });
         expect(fm).toBe('---\n---');
+    });
+
+    it('uses a custom title field name', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, titleField: { enabled: true, name: 'note-title' } });
+        expect(fm).toContain('note-title: "My note"');
+        expect(fm).not.toMatch(/^title:/m);
+    });
+
+    it('uses a custom entity-type field name', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, entityTypeField: { enabled: true, name: 'type' } });
+        expect(fm).toContain('type: "person"');
+        expect(fm).not.toContain('entity-type:');
+    });
+
+    it('uses a custom tags field name', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, tagsField: { enabled: true, name: 'labels' } });
+        expect(fm).toContain('labels:');
+        expect(fm).toContain('  - person');
+        expect(fm).not.toContain('tags:');
+    });
+
+    it('uses a custom created field name', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, createdField: { enabled: true, name: 'date-created' } });
+        expect(fm).toContain(`date-created: "${FIXED_DATE}"`);
+        expect(fm).not.toMatch(/^created:/m);
+    });
+
+    it('uses a custom source-note field name', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, sourceNoteField: { enabled: true, name: 'origin' } });
+        expect(fm).toContain('origin: "[[Source]]"');
+        expect(fm).not.toContain('source-note:');
+    });
+
+    it('excludes custom-named standard field from template override protection', () => {
+        // If entity-type is renamed to "type", a template key "type" should be excluded (standard wins)
+        const et: EntityType = { ...PERSON, frontmatterTemplate: { type: 'OVERRIDE' } };
+        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE, { ...ALL_ON, entityTypeField: { enabled: true, name: 'type' } });
+        expect(fm).toContain('type: "person"');
+        expect(fm).not.toContain('OVERRIDE');
     });
 });
 

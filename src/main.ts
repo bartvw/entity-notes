@@ -26,7 +26,7 @@ export default class EntityNotesPlugin extends Plugin {
                 const file = this.app.metadataCache.getFirstLinkpathDest(linkTarget, '');
                 if (!file) return null;
                 const cache = this.app.metadataCache.getFileCache(file);
-                const entityTypeId: unknown = cache?.frontmatter?.['entity-type'];
+                const entityTypeId: unknown = cache?.frontmatter?.[this.settings.entityTypeField.name];
                 if (typeof entityTypeId !== 'string') return null;
                 return this.settings.entityTypes.find(e => e.id === entityTypeId && e.enabled) ?? null;
             });
@@ -51,12 +51,14 @@ export default class EntityNotesPlugin extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData() as Partial<PluginSettings>,
         );
-        // Migration: backfill fields added after initial release.
-        this.settings.includeTitle       ??= true;
-        this.settings.includeEntityType  ??= true;
-        this.settings.includeTags        ??= true;
-        this.settings.includeCreated     ??= true;
-        this.settings.includeSourceNote  ??= true;
+        // Migration: backfill FrontmatterField objects added after initial release.
+        // Carry over the enabled state from older boolean flags when present.
+        const old = this.settings as unknown as Record<string, unknown>;
+        this.settings.titleField      ??= { enabled: (old['includeTitle']      as boolean) ?? true, name: 'title' };
+        this.settings.entityTypeField ??= { enabled: (old['includeEntityType'] as boolean) ?? true, name: 'entity-type' };
+        this.settings.tagsField       ??= { enabled: (old['includeTags']       as boolean) ?? true, name: 'tags' };
+        this.settings.createdField    ??= { enabled: (old['includeCreated']    as boolean) ?? true, name: 'created' };
+        this.settings.sourceNoteField ??= { enabled: (old['includeSourceNote'] as boolean) ?? true, name: 'source-note' };
     }
 
     async saveSettings() {
