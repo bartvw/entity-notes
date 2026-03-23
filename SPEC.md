@@ -81,7 +81,7 @@ source-note: "[[OriginalNoteName]]"        # name configurable; omitted when dis
 
 The `tags` list is seeded with the entity type id. If `frontmatterTemplate` includes additional tags, they are merged into the list rather than replacing it. If a template field's key matches the configured name of any standard field, the standard field wins.
 
-> **Note:** The entity pill relies on the `entity-type` field (or whatever name it is configured to) being present in the created note's frontmatter. Disabling this field will prevent pills from appearing for all newly created entity notes.
+> **Note:** When **Identify entities by** is set to "Entity-type property" (the default), the entity-type field must be present in the created note's frontmatter for pills to appear. Disabling this field in that mode will prevent pills from appearing for all newly created entity notes. When using "Tag" mode, the entity-type field is not needed for pill detection.
 
 ### Note body
 Empty after the frontmatter block. The user fills it in.
@@ -105,6 +105,17 @@ After conversion, the plugin detects lines (or rendered HTML) containing a wikil
 - Uses `createEl` / DOM API, not `innerHTML`
 - The pill is re-rendered whenever the document or viewport changes, consistent with the `EntityButtonPlugin` update cycle
 
+### Entity identification
+
+The plugin needs to determine whether a linked note is an entity note, and which entity type it belongs to. This is controlled by the **Identify entities by** setting:
+
+| Mode | How a note is identified |
+|------|--------------------------|
+| **Entity-type property** (default) | The configured entity-type frontmatter field (default `entity-type`) must be present and its value must match an enabled entity type id. |
+| **Tag** | The configured tags frontmatter field (default `tags`) must contain a value matching an enabled entity type id. |
+
+When using Tag mode, the entity-type field is not required for pill detection. When using Entity-type property mode, the entity-type field must be enabled and present for pills to appear.
+
 ### Implementation by mode
 
 | Mode | Mechanism |
@@ -112,7 +123,7 @@ After conversion, the plugin detects lines (or rendered HTML) containing a wikil
 | Live Preview / Source | CM6 `Decoration.widget` via `EntityButtonPlugin` (`EntityPillWidget`) |
 | Reading | `MarkdownPostProcessor` that finds `<a class="internal-link">` elements and inserts a pill `<span>` after each one that resolves to a known entity note |
 
-The two mechanisms produce identical visual output, using the same CSS class and inline `backgroundColor` style.
+The two mechanisms produce identical visual output, using the same CSS class and inline `backgroundColor` style. Both use the same pure helper (`resolveEntityFromFrontmatter`) to determine the entity type from a note's cached frontmatter.
 
 ### Example
 
@@ -167,6 +178,7 @@ When the **Convert on Enter** setting is enabled, pressing Enter at the end of a
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | Convert on Enter | Boolean | Off | When enabled, pressing Enter at the end of a matched line converts it immediately. |
+| Identify entities by | Enum | Entity-type property | How the plugin determines whether a linked note is an entity note for pill display. Options: **Entity-type property** (matches the configured entity-type field value against entity type ids) or **Tag** (matches the configured tags field values against entity type ids). |
 
 #### Frontmatter fields
 

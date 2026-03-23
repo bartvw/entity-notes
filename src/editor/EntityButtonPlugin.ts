@@ -7,6 +7,7 @@ import { PatternMatcher } from '../services/PatternMatcher';
 import { EntityWidget, convertLine } from './EntityWidget';
 import { EntityPillWidget } from './EntityPillWidget';
 import { findMatchForEnter } from './keymapUtils';
+import { resolveEntityFromFrontmatter } from '../services/resolveEntity';
 
 /**
  * Creates the CM6 editor extension that watches for entity trigger tags in
@@ -101,20 +102,17 @@ function buildDecorations(
                     const file = plugin.app.metadataCache.getFirstLinkpathDest(linkText, '');
                     if (file) {
                         const cache = plugin.app.metadataCache.getFileCache(file);
-                        const entityTypeId: unknown = cache?.frontmatter?.['entity-type'];
-                        if (typeof entityTypeId === 'string') {
-                            const et = entityTypes.find(e => e.id === entityTypeId && e.enabled);
-                            if (et) {
-                                const afterLink = line.from + linkMatch.index! + linkMatch[0].length;
-                                builder.add(
-                                    afterLink,
-                                    afterLink,
-                                    Decoration.widget({
-                                        widget: new EntityPillWidget(et),
-                                        side: 1,
-                                    }),
-                                );
-                            }
+                        const et = resolveEntityFromFrontmatter(cache?.frontmatter, plugin.settings);
+                        if (et) {
+                            const afterLink = line.from + linkMatch.index! + linkMatch[0].length;
+                            builder.add(
+                                afterLink,
+                                afterLink,
+                                Decoration.widget({
+                                    widget: new EntityPillWidget(et),
+                                    side: 1,
+                                }),
+                            );
                         }
                     }
                 }

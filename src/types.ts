@@ -14,9 +14,12 @@ export interface FrontmatterField {
     name: string;
 }
 
+export type EntityIdentificationMethod = 'entity-type-field' | 'tag';
+
 export interface PluginSettings {
     entityTypes: EntityType[];
     convertOnEnter: boolean;
+    entityIdentification: EntityIdentificationMethod;
     titleField: FrontmatterField;
     entityTypeField: FrontmatterField;
     tagsField: FrontmatterField;

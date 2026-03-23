@@ -1,6 +1,6 @@
 import { App, Modal, Notice, PluginSettingTab, Setting, ToggleComponent } from 'obsidian';
 import type EntityNotesPlugin from './main';
-import type { EntityType, PluginSettings } from './types';
+import type { EntityIdentificationMethod, EntityType, PluginSettings } from './types';
 
 export const DEFAULT_ENTITY_TYPES: EntityType[] = [
     { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, frontmatterTemplate: {} },
@@ -13,6 +13,7 @@ export const DEFAULT_ENTITY_TYPES: EntityType[] = [
 export const DEFAULT_SETTINGS: PluginSettings = {
     entityTypes: DEFAULT_ENTITY_TYPES,
     convertOnEnter: false,
+    entityIdentification: 'entity-type-field',
     titleField:      { enabled: true, name: 'title' },
     entityTypeField: { enabled: true, name: 'entity-type' },
     tagsField:       { enabled: true, name: 'tags' },
@@ -45,6 +46,19 @@ export class EntityNotesSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.convertOnEnter)
                 .onChange(async value => {
                     this.plugin.settings.convertOnEnter = value;
+                    await this.plugin.saveSettings();
+                }),
+            );
+
+        new Setting(containerEl)
+            .setName('Identify entities by')
+            .setDesc('How the plugin determines whether a linked note is an entity note, for displaying the entity pill.')
+            .addDropdown(drop => drop
+                .addOption('entity-type-field', 'Entity-type property')
+                .addOption('tag', 'Tag')
+                .setValue(this.plugin.settings.entityIdentification)
+                .onChange(async value => {
+                    this.plugin.settings.entityIdentification = value as EntityIdentificationMethod;
                     await this.plugin.saveSettings();
                 }),
             );
