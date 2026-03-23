@@ -1,7 +1,8 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "entity-notes",
 	"version": "1.0.2",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "An Obsidian plugin that converts tagged entities into notes with backlinks to the original note.",
+	"author": "Bart van Wissen",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -13,7 +14,7 @@
 		"test": "vitest run"
 	},
 	"keywords": [],
-	"license": "0-BSD",
+	"license": "MIT",
 	"devDependencies": {
 		"@codemirror/state": "^6.4.0",
 		"@codemirror/view": "^6.28.0",

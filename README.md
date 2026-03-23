@@ -71,7 +71,7 @@ Standard fields (`title`, `entity-type`, `tags`, `created`, `source-note`) are a
 ### Development
 
 ```bash
-git clone https://github.com/your-username/entity-notes
+git clone https://github.com/bartvw/entity-notes
 cd entity-notes
 npm install
 npm run dev   # watch mode
