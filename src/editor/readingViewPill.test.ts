@@ -60,25 +60,36 @@ describe('injectPillsIntoElement', () => {
     it('does nothing when there are no internal links', () => {
         const el = document.createElement('div');
         el.textContent = 'Plain text';
-        injectPillsIntoElement(el, () => PROJECT);
+        injectPillsIntoElement(el, () => [PROJECT]);
         expect(el.querySelectorAll('.entity-notes-pill').length).toBe(0);
     });
 
-    it('does nothing when resolver returns null', () => {
+    it('does nothing when resolver returns empty array', () => {
         const el = makeContainer(makeLink('Some Note'));
-        injectPillsIntoElement(el, () => null);
+        injectPillsIntoElement(el, () => []);
         expect(el.querySelectorAll('.entity-notes-pill').length).toBe(0);
     });
 
     it('inserts a pill immediately after the matched link', () => {
         const link = makeLink('Redesign the onboarding flow');
         const el = makeContainer(link);
-        injectPillsIntoElement(el, () => PROJECT);
+        injectPillsIntoElement(el, () => [PROJECT]);
 
         const pills = el.querySelectorAll('.entity-notes-pill');
         expect(pills.length).toBe(1);
         expect(pills[0]!.previousElementSibling).toBe(link);
         expect(pills[0]!.textContent).toBe('project');
+    });
+
+    it('inserts multiple pills when resolver returns multiple entity types', () => {
+        const link = makeLink('Multi Entity Note');
+        const el = makeContainer(link);
+        injectPillsIntoElement(el, () => [PERSON, PROJECT]);
+
+        const pills = el.querySelectorAll('.entity-notes-pill');
+        expect(pills.length).toBe(2);
+        expect(pills[0]!.textContent).toBe('person');
+        expect(pills[1]!.textContent).toBe('project');
     });
 
     it('inserts pills for each matching link independently', () => {
@@ -87,20 +98,20 @@ describe('injectPillsIntoElement', () => {
         const el = makeContainer(link1, link2);
 
         injectPillsIntoElement(el, (target) => {
-            if (target === 'Redesign the onboarding flow') return PROJECT;
-            if (target === 'Met Sarah') return PERSON;
-            return null;
+            if (target === 'Redesign the onboarding flow') return [PROJECT];
+            if (target === 'Met Sarah') return [PERSON];
+            return [];
         });
 
         expect(el.querySelectorAll('.entity-notes-pill').length).toBe(2);
     });
 
-    it('skips a link when resolver returns null for that specific target', () => {
+    it('skips a link when resolver returns empty array for that specific target', () => {
         const link1 = makeLink('Entity Note');
         const link2 = makeLink('Regular Note');
         const el = makeContainer(link1, link2);
 
-        injectPillsIntoElement(el, (target) => target === 'Entity Note' ? PROJECT : null);
+        injectPillsIntoElement(el, (target) => target === 'Entity Note' ? [PROJECT] : []);
 
         const pills = el.querySelectorAll('.entity-notes-pill');
         expect(pills.length).toBe(1);
@@ -114,7 +125,7 @@ describe('injectPillsIntoElement', () => {
         const el = makeContainer(a);
 
         let resolved = '';
-        injectPillsIntoElement(el, (target) => { resolved = target; return null; });
+        injectPillsIntoElement(el, (target) => { resolved = target; return []; });
         expect(resolved).toBe('Fallback note');
     });
 
@@ -124,7 +135,7 @@ describe('injectPillsIntoElement', () => {
         a.textContent = 'External';
         const el = makeContainer(a);
 
-        injectPillsIntoElement(el, () => PROJECT);
+        injectPillsIntoElement(el, () => [PROJECT]);
         expect(el.querySelectorAll('.entity-notes-pill').length).toBe(0);
     });
 });

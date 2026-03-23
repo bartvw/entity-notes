@@ -23,13 +23,15 @@ export function createPillElement(entityType: EntityType): HTMLElement {
  */
 export function injectPillsIntoElement(
     el: HTMLElement,
-    resolveEntityType: (linkTarget: string) => EntityType | null,
+    resolveEntityTypes: (linkTarget: string) => EntityType[],
 ): void {
     el.querySelectorAll<HTMLAnchorElement>('a.internal-link').forEach(a => {
         const linkTarget = (a.getAttribute('data-href') ?? a.textContent ?? '').trim();
         if (!linkTarget) return;
-        const entityType = resolveEntityType(linkTarget);
-        if (entityType === null) return;
-        a.insertAdjacentElement('afterend', createPillElement(entityType));
+        const entityTypes = resolveEntityTypes(linkTarget);
+        // Insert pills in reverse order so each insertAdjacentElement('afterend') keeps them in order
+        for (let i = entityTypes.length - 1; i >= 0; i--) {
+            a.insertAdjacentElement('afterend', createPillElement(entityTypes[i]!));
+        }
     });
 }

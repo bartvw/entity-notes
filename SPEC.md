@@ -109,10 +109,12 @@ After conversion, the plugin detects lines (or rendered HTML) containing a wikil
 
 The plugin needs to determine whether a linked note is an entity note, and which entity type it belongs to. This is controlled by the **Identify entities by** setting:
 
-| Mode | How a note is identified |
-|------|--------------------------|
-| **Entity-type property** (default) | The configured entity-type frontmatter field (default `entity-type`) must be present and its value must match an enabled entity type id. |
-| **Tag** | The configured tags frontmatter field (default `tags`) must contain a value matching an enabled entity type id. |
+| Mode | How a note is identified | Pills per link |
+|------|--------------------------|----------------|
+| **Entity-type property** (default) | The configured entity-type frontmatter field (default `entity-type`) must be present and its value must match an enabled entity type id. | At most one |
+| **Tag** | The configured tags frontmatter field (default `tags`) must contain values matching enabled entity type ids. | One per matching tag |
+
+In Tag mode a single note can match multiple entity types (e.g. `tags: [person, project]`), and a pill is rendered for each match. In Entity-type property mode at most one pill is rendered per link.
 
 When using Tag mode, the entity-type field is not required for pill detection. When using Entity-type property mode, the entity-type field must be enabled and present for pills to appear.
 

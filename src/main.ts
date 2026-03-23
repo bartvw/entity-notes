@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS, EntityNotesSettingTab } from './settings';
 import type { PluginSettings } from './types';
 import { buildEntityButtonPlugin } from './editor/EntityButtonPlugin';
 import { injectPillsIntoElement } from './editor/readingViewPill';
-import { resolveEntityFromFrontmatter } from './services/resolveEntity';
+import { resolveEntitiesFromFrontmatter } from './services/resolveEntity';
 
 export default class EntityNotesPlugin extends Plugin {
     settings: PluginSettings;
@@ -25,9 +25,9 @@ export default class EntityNotesPlugin extends Plugin {
         this.registerMarkdownPostProcessor((el) => {
             injectPillsIntoElement(el, (linkTarget) => {
                 const file = this.app.metadataCache.getFirstLinkpathDest(linkTarget, '');
-                if (!file) return null;
+                if (!file) return [];
                 const cache = this.app.metadataCache.getFileCache(file);
-                return resolveEntityFromFrontmatter(cache?.frontmatter, this.settings);
+                return resolveEntitiesFromFrontmatter(cache?.frontmatter, this.settings);
             });
         });
 
@@ -59,6 +59,10 @@ export default class EntityNotesPlugin extends Plugin {
         this.settings.createdField    ??= { enabled: (old['includeCreated']    as boolean) ?? true, name: 'created' };
         this.settings.sourceNoteField      ??= { enabled: (old['includeSourceNote'] as boolean) ?? true, name: 'source-note' };
         this.settings.entityIdentification ??= 'entity-type-field';
+        // Migration: 'tag' was renamed to 'tags'.
+        if ((this.settings.entityIdentification as string) === 'tag') {
+            this.settings.entityIdentification = 'tags';
+        }
     }
 
     async saveSettings() {

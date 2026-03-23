@@ -7,7 +7,7 @@ import { PatternMatcher } from '../services/PatternMatcher';
 import { EntityWidget, convertLine } from './EntityWidget';
 import { EntityPillWidget } from './EntityPillWidget';
 import { findMatchForEnter } from './keymapUtils';
-import { resolveEntityFromFrontmatter } from '../services/resolveEntity';
+import { resolveEntitiesFromFrontmatter } from '../services/resolveEntity';
 
 /**
  * Creates the CM6 editor extension that watches for entity trigger tags in
@@ -102,9 +102,9 @@ function buildDecorations(
                     const file = plugin.app.metadataCache.getFirstLinkpathDest(linkText, '');
                     if (file) {
                         const cache = plugin.app.metadataCache.getFileCache(file);
-                        const et = resolveEntityFromFrontmatter(cache?.frontmatter, plugin.settings);
-                        if (et) {
-                            const afterLink = line.from + linkMatch.index! + linkMatch[0].length;
+                        const matches = resolveEntitiesFromFrontmatter(cache?.frontmatter, plugin.settings);
+                        const afterLink = line.from + linkMatch.index! + linkMatch[0].length;
+                        for (const et of matches) {
                             builder.add(
                                 afterLink,
                                 afterLink,

@@ -55,7 +55,7 @@ export class EntityNotesSettingTab extends PluginSettingTab {
             .setDesc('How the plugin determines whether a linked note is an entity note, for displaying the entity pill.')
             .addDropdown(drop => drop
                 .addOption('entity-type-field', 'Entity-type property')
-                .addOption('tag', 'Tag')
+                .addOption('tags', 'Tags')
                 .setValue(this.plugin.settings.entityIdentification)
                 .onChange(async value => {
                     this.plugin.settings.entityIdentification = value as EntityIdentificationMethod;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveEntityFromFrontmatter } from './resolveEntity';
+import { resolveEntitiesFromFrontmatter } from './resolveEntity';
 import type { EntityType, PluginSettings } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -27,48 +27,51 @@ const BASE_OPTIONS: Pick<PluginSettings, 'entityIdentification' | 'entityTypeFie
 // entity-type-field mode
 // ---------------------------------------------------------------------------
 
-describe('resolveEntityFromFrontmatter — entity-type-field mode', () => {
-    it('returns the matching entity type', () => {
-        const result = resolveEntityFromFrontmatter(
+describe('resolveEntitiesFromFrontmatter — entity-type-field mode', () => {
+    it('returns the matching entity type in an array', () => {
+        const result = resolveEntitiesFromFrontmatter(
             { 'entity-type': 'person' },
             BASE_OPTIONS,
         );
-        expect(result).toBe(PERSON);
+        expect(result).toEqual([PERSON]);
     });
 
-    it('returns null when entity-type field is absent', () => {
-        expect(resolveEntityFromFrontmatter({}, BASE_OPTIONS)).toBeNull();
+    it('returns empty array when entity-type field is absent', () => {
+        expect(resolveEntitiesFromFrontmatter({}, BASE_OPTIONS)).toEqual([]);
     });
 
-    it('returns null when entity-type value is not a string', () => {
-        expect(resolveEntityFromFrontmatter({ 'entity-type': 42 }, BASE_OPTIONS)).toBeNull();
+    it('returns empty array when entity-type value is not a string', () => {
+        expect(resolveEntitiesFromFrontmatter({ 'entity-type': 42 }, BASE_OPTIONS)).toEqual([]);
     });
 
-    it('returns null when entity-type value does not match any entity type', () => {
-        expect(resolveEntityFromFrontmatter({ 'entity-type': 'unknown' }, BASE_OPTIONS)).toBeNull();
+    it('returns empty array when entity-type value does not match any entity type', () => {
+        expect(resolveEntitiesFromFrontmatter({ 'entity-type': 'unknown' }, BASE_OPTIONS)).toEqual([]);
     });
 
-    it('returns null for a disabled entity type', () => {
-        expect(resolveEntityFromFrontmatter({ 'entity-type': 'disabled' }, BASE_OPTIONS)).toBeNull();
+    it('returns empty array for a disabled entity type', () => {
+        expect(resolveEntitiesFromFrontmatter({ 'entity-type': 'disabled' }, BASE_OPTIONS)).toEqual([]);
     });
 
-    it('returns null when frontmatter is null', () => {
-        expect(resolveEntityFromFrontmatter(null, BASE_OPTIONS)).toBeNull();
+    it('returns empty array when frontmatter is null', () => {
+        expect(resolveEntitiesFromFrontmatter(null, BASE_OPTIONS)).toEqual([]);
     });
 
-    it('returns null when frontmatter is undefined', () => {
-        expect(resolveEntityFromFrontmatter(undefined, BASE_OPTIONS)).toBeNull();
+    it('returns empty array when frontmatter is undefined', () => {
+        expect(resolveEntitiesFromFrontmatter(undefined, BASE_OPTIONS)).toEqual([]);
     });
 
     it('uses the configured entity-type field name', () => {
         const options = { ...BASE_OPTIONS, entityTypeField: { enabled: true, name: 'type' } };
-        const result = resolveEntityFromFrontmatter({ type: 'person' }, options);
-        expect(result).toBe(PERSON);
+        expect(resolveEntitiesFromFrontmatter({ type: 'person' }, options)).toEqual([PERSON]);
     });
 
-    it('returns null when using the default field name but frontmatter uses a custom name', () => {
-        const result = resolveEntityFromFrontmatter({ type: 'person' }, BASE_OPTIONS);
-        expect(result).toBeNull();
+    it('returns empty array when using default field name but frontmatter uses a custom name', () => {
+        expect(resolveEntitiesFromFrontmatter({ type: 'person' }, BASE_OPTIONS)).toEqual([]);
+    });
+
+    it('returns at most one result even if the same id appears multiple times in entityTypes', () => {
+        const result = resolveEntitiesFromFrontmatter({ 'entity-type': 'person' }, BASE_OPTIONS);
+        expect(result).toHaveLength(1);
     });
 });
 
@@ -76,55 +79,65 @@ describe('resolveEntityFromFrontmatter — entity-type-field mode', () => {
 // tag mode
 // ---------------------------------------------------------------------------
 
-describe('resolveEntityFromFrontmatter — tag mode', () => {
-    const TAG_OPTIONS = { ...BASE_OPTIONS, entityIdentification: 'tag' as const };
+describe('resolveEntitiesFromFrontmatter — tag mode', () => {
+    const TAG_OPTIONS = { ...BASE_OPTIONS, entityIdentification: 'tags' as const };
 
     it('returns the matching entity type when tag is in array', () => {
-        const result = resolveEntityFromFrontmatter(
+        const result = resolveEntitiesFromFrontmatter(
             { tags: ['person', 'work'] },
             TAG_OPTIONS,
         );
-        expect(result).toBe(PERSON);
+        expect(result).toEqual([PERSON]);
     });
 
-    it('returns the first matching entity type when multiple tags match', () => {
-        const result = resolveEntityFromFrontmatter(
+    it('returns multiple entity types when multiple tags match', () => {
+        const result = resolveEntitiesFromFrontmatter(
+            { tags: ['person', 'project'] },
+            TAG_OPTIONS,
+        );
+        expect(result).toEqual([PERSON, PROJECT]);
+    });
+
+    it('preserves the order of entityTypes (not tag order)', () => {
+        // entityTypes order is [PERSON, PROJECT, DISABLED]
+        // tags are in reverse order — result should follow entityTypes order
+        const result = resolveEntitiesFromFrontmatter(
             { tags: ['project', 'person'] },
             TAG_OPTIONS,
         );
-        // entityTypes order is [PERSON, PROJECT, DISABLED], so PERSON is found first via person tag
-        // but project comes first in the tags array — find() iterates entityTypes, not tags
-        expect(result).toBe(PERSON);
+        expect(result).toEqual([PERSON, PROJECT]);
     });
 
-    it('returns null when no tags match', () => {
-        expect(resolveEntityFromFrontmatter({ tags: ['work', 'q1'] }, TAG_OPTIONS)).toBeNull();
+    it('returns empty array when no tags match', () => {
+        expect(resolveEntitiesFromFrontmatter({ tags: ['work', 'q1'] }, TAG_OPTIONS)).toEqual([]);
     });
 
-    it('returns null when tags field is absent', () => {
-        expect(resolveEntityFromFrontmatter({}, TAG_OPTIONS)).toBeNull();
+    it('returns empty array when tags field is absent', () => {
+        expect(resolveEntitiesFromFrontmatter({}, TAG_OPTIONS)).toEqual([]);
     });
 
-    it('returns null for a disabled entity type', () => {
-        expect(resolveEntityFromFrontmatter({ tags: ['disabled'] }, TAG_OPTIONS)).toBeNull();
+    it('excludes disabled entity types', () => {
+        const result = resolveEntitiesFromFrontmatter(
+            { tags: ['person', 'disabled'] },
+            TAG_OPTIONS,
+        );
+        expect(result).toEqual([PERSON]);
     });
 
     it('handles a single string tag (not an array)', () => {
-        const result = resolveEntityFromFrontmatter({ tags: 'person' }, TAG_OPTIONS);
-        expect(result).toBe(PERSON);
+        expect(resolveEntitiesFromFrontmatter({ tags: 'person' }, TAG_OPTIONS)).toEqual([PERSON]);
     });
 
-    it('returns null when tags value is neither string nor array', () => {
-        expect(resolveEntityFromFrontmatter({ tags: 42 }, TAG_OPTIONS)).toBeNull();
+    it('returns empty array when tags value is neither string nor array', () => {
+        expect(resolveEntitiesFromFrontmatter({ tags: 42 }, TAG_OPTIONS)).toEqual([]);
     });
 
     it('uses the configured tags field name', () => {
         const options = { ...TAG_OPTIONS, tagsField: { enabled: true, name: 'labels' } };
-        const result = resolveEntityFromFrontmatter({ labels: ['person'] }, options);
-        expect(result).toBe(PERSON);
+        expect(resolveEntitiesFromFrontmatter({ labels: ['person'] }, options)).toEqual([PERSON]);
     });
 
-    it('returns null when frontmatter is null', () => {
-        expect(resolveEntityFromFrontmatter(null, TAG_OPTIONS)).toBeNull();
+    it('returns empty array when frontmatter is null', () => {
+        expect(resolveEntitiesFromFrontmatter(null, TAG_OPTIONS)).toEqual([]);
     });
 });
