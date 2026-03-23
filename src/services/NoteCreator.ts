@@ -1,6 +1,8 @@
 import { normalizePath } from 'obsidian';
 import type { App, TFile } from 'obsidian';
-import type { EntityType } from '../types';
+import type { EntityType, PluginSettings } from '../types';
+
+type FrontmatterOptions = Pick<PluginSettings, 'includeTitle' | 'includeEntityType' | 'includeTags' | 'includeCreated' | 'includeSourceNote'>;
 
 export interface NoteCreatorResult {
     /** The created TFile. */
@@ -26,6 +28,7 @@ export class NoteCreator {
         lineText: string,
         entityType: EntityType,
         sourceNotePath: string,
+        options: FrontmatterOptions,
         date = NoteCreator.today(),
     ): Promise<NoteCreatorResult> {
         const rawTitle = NoteCreator.deriveTitle(lineText, entityType.triggerTag);
@@ -35,7 +38,7 @@ export class NoteCreator {
         await this.ensureFolder(targetFolder);
 
         const { filePath, title } = this.resolveFilePath(targetFolder, rawTitle);
-        const content = NoteCreator.buildContent(title, entityType, sourceNoteName, date);
+        const content = NoteCreator.buildContent(title, entityType, sourceNoteName, date, options);
         const file = await this.app.vault.create(filePath, content);
         const modifiedLine = NoteCreator.buildModifiedLine(lineText, entityType.triggerTag, title);
 
@@ -90,8 +93,9 @@ export class NoteCreator {
         entityType: EntityType,
         sourceNoteName: string,
         date: string,
+        options: FrontmatterOptions,
     ): string {
-        return NoteCreator.buildFrontmatter(title, entityType, sourceNoteName, date) + '\n';
+        return NoteCreator.buildFrontmatter(title, entityType, sourceNoteName, date, options) + '\n';
     }
 
     /**
@@ -106,6 +110,7 @@ export class NoteCreator {
         entityType: EntityType,
         sourceNoteName: string,
         date: string,
+        options: FrontmatterOptions,
     ): string {
         const STANDARD_KEYS = new Set(['title', 'entity-type', 'tags', 'created', 'source-note']);
 
@@ -121,14 +126,13 @@ export class NoteCreator {
         }
 
         const lines: string[] = ['---'];
-        if (entityType.includeTitle) lines.push(`title: "${escapeYamlString(title)}"`);
-        lines.push(
-            `entity-type: "${entityType.id}"`,
-            'tags:',
-            ...tags.map(t => `  - ${t}`),
-            `created: "${date}"`,
-        );
-        if (entityType.includeSourceNote) lines.push(`source-note: "[[${sourceNoteName}]]"`);
+        if (options.includeTitle)      lines.push(`title: "${escapeYamlString(title)}"`);
+        if (options.includeEntityType) lines.push(`entity-type: "${entityType.id}"`);
+        if (options.includeTags) {
+            lines.push('tags:', ...tags.map(t => `  - ${t}`));
+        }
+        if (options.includeCreated)    lines.push(`created: "${date}"`);
+        if (options.includeSourceNote) lines.push(`source-note: "[[${sourceNoteName}]]"`);
 
         // Append non-standard template fields in insertion order
         for (const [key, value] of Object.entries(entityType.frontmatterTemplate)) {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NoteCreator } from './NoteCreator';
-import type { EntityType } from '../types';
+import type { EntityType, PluginSettings } from '../types';
 import { TFile } from 'obsidian';
 import type { App } from 'obsidian';
 
@@ -10,14 +10,18 @@ import type { App } from 'obsidian';
 
 const PERSON: EntityType = {
     id: 'person', name: 'Person', triggerTag: '#person',
-    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true,
-    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/People', color: '#4a90d9', enabled: true, frontmatterTemplate: {},
 };
 
 const PROJECT: EntityType = {
     id: 'project', name: 'Project', triggerTag: '#project',
-    targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true,
-    includeTitle: true, includeSourceNote: true, frontmatterTemplate: {},
+    targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true, frontmatterTemplate: {},
+};
+
+// Default options with all fields enabled — used as the base for most tests.
+const ALL_ON: Pick<PluginSettings, 'includeTitle' | 'includeEntityType' | 'includeTags' | 'includeCreated' | 'includeSourceNote'> = {
+    includeTitle: true, includeEntityType: true, includeTags: true,
+    includeCreated: true, includeSourceNote: true,
 };
 
 const FIXED_DATE = '2026-03-22';
@@ -165,7 +169,7 @@ describe('NoteCreator.buildModifiedLine', () => {
 
 describe('NoteCreator.buildFrontmatter', () => {
     it('produces the standard frontmatter fields in order', () => {
-        const fm = NoteCreator.buildFrontmatter('Redesign the onboarding flow', PROJECT, 'Daily Note 2026-03-22', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Redesign the onboarding flow', PROJECT, 'Daily Note 2026-03-22', FIXED_DATE, ALL_ON);
         expect(fm).toBe([
             '---',
             'title: "Redesign the onboarding flow"',
@@ -179,23 +183,23 @@ describe('NoteCreator.buildFrontmatter', () => {
     });
 
     it('escapes double-quotes in the title', () => {
-        const fm = NoteCreator.buildFrontmatter('The "big" idea', PERSON, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('The "big" idea', PERSON, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('title: "The \\"big\\" idea"');
     });
 
     it('escapes backslashes in the title', () => {
-        const fm = NoteCreator.buildFrontmatter('path\\to\\thing', PERSON, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('path\\to\\thing', PERSON, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('title: "path\\\\to\\\\thing"');
     });
 
     it('seeds tags with the entity type id', () => {
-        const fm = NoteCreator.buildFrontmatter('Title', PERSON, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', PERSON, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('  - person');
     });
 
     it('merges additional tags from frontmatterTemplate (array)', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { tags: ['work', 'q1'] } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('  - person');
         expect(fm).toContain('  - work');
         expect(fm).toContain('  - q1');
@@ -203,14 +207,14 @@ describe('NoteCreator.buildFrontmatter', () => {
 
     it('merges a single string tag from frontmatterTemplate', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { tags: 'work' } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('  - person');
         expect(fm).toContain('  - work');
     });
 
     it('does not duplicate entity-type id if it also appears in template tags', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { tags: ['person', 'extra'] } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         const tagLines = fm.split('\n').filter(l => l.startsWith('  - '));
         const personLines = tagLines.filter(l => l.trim() === '- person');
         expect(personLines).toHaveLength(1);
@@ -218,25 +222,25 @@ describe('NoteCreator.buildFrontmatter', () => {
 
     it('appends non-standard string fields from frontmatterTemplate', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { department: 'Engineering' } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('department: "Engineering"');
     });
 
     it('appends non-standard number fields', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { priority: 3 } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('priority: 3');
     });
 
     it('appends non-standard boolean fields', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { draft: true } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('draft: true');
     });
 
     it('appends non-standard array fields', () => {
         const et: EntityType = { ...PERSON, frontmatterTemplate: { aliases: ['S', 'SP'] } };
-        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Title', et, 'Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('aliases:');
         expect(fm).toContain('  - "S"');
         expect(fm).toContain('  - "SP"');
@@ -251,7 +255,7 @@ describe('NoteCreator.buildFrontmatter', () => {
                 'source-note': 'OVERRIDE',
             },
         };
-        const fm = NoteCreator.buildFrontmatter('Real Title', et, 'Real Note', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('Real Title', et, 'Real Note', FIXED_DATE, ALL_ON);
         expect(fm).toContain('title: "Real Title"');
         expect(fm).toContain('entity-type: "person"');
         expect(fm).toContain('created: "2026-03-22"');
@@ -260,37 +264,56 @@ describe('NoteCreator.buildFrontmatter', () => {
     });
 
     it('wraps content between --- delimiters', () => {
-        const fm = NoteCreator.buildFrontmatter('T', PERSON, 'N', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('T', PERSON, 'N', FIXED_DATE, ALL_ON);
         expect(fm.startsWith('---\n')).toBe(true);
         expect(fm.endsWith('\n---')).toBe(true);
     });
 
     it('omits title when includeTitle is false', () => {
-        const et: EntityType = { ...PERSON, includeTitle: false };
-        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeTitle: false });
         expect(fm).not.toContain('title:');
         expect(fm).toContain('entity-type:');
     });
 
     it('omits source-note when includeSourceNote is false', () => {
-        const et: EntityType = { ...PERSON, includeSourceNote: false };
-        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeSourceNote: false });
         expect(fm).not.toContain('source-note:');
         expect(fm).toContain('created:');
     });
 
     it('omits both title and source-note when both flags are false', () => {
-        const et: EntityType = { ...PERSON, includeTitle: false, includeSourceNote: false };
-        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeTitle: false, includeSourceNote: false });
         expect(fm).not.toContain('title:');
         expect(fm).not.toContain('source-note:');
     });
 
     it('includes title and source-note when both flags are true', () => {
-        const et: EntityType = { ...PERSON, includeTitle: true, includeSourceNote: true };
-        const fm = NoteCreator.buildFrontmatter('My note', et, 'Source', FIXED_DATE);
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, ALL_ON);
         expect(fm).toContain('title: "My note"');
         expect(fm).toContain('source-note: "[[Source]]"');
+    });
+
+    it('omits entity-type when includeEntityType is false', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeEntityType: false });
+        expect(fm).not.toContain('entity-type:');
+        expect(fm).toContain('created:');
+    });
+
+    it('omits tags when includeTags is false', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeTags: false });
+        expect(fm).not.toContain('tags:');
+        expect(fm).toContain('entity-type:');
+    });
+
+    it('omits created when includeCreated is false', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { ...ALL_ON, includeCreated: false });
+        expect(fm).not.toContain('created:');
+        expect(fm).toContain('entity-type:');
+    });
+
+    it('omits all fields when all flags are false', () => {
+        const fm = NoteCreator.buildFrontmatter('My note', PERSON, 'Source', FIXED_DATE, { includeTitle: false, includeEntityType: false, includeTags: false, includeCreated: false, includeSourceNote: false });
+        expect(fm).toBe('---\n---');
     });
 });
 
@@ -350,7 +373,7 @@ describe('NoteCreator.create', () => {
     });
 
     it('creates the target folder when it does not exist', async () => {
-        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         expect(createFolder).toHaveBeenCalledWith('Entities/People');
     });
 
@@ -358,12 +381,12 @@ describe('NoteCreator.create', () => {
         getAbstractFileByPath.mockImplementation((p: string) =>
             p === 'Entities/People' ? { path: p } : null,
         );
-        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         expect(createFolder).not.toHaveBeenCalled();
     });
 
     it('creates the note at the correct path', async () => {
-        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         expect(create).toHaveBeenCalledWith(
             'Entities/People/Sarah.md',
             expect.any(String),
@@ -371,22 +394,22 @@ describe('NoteCreator.create', () => {
     });
 
     it('returns the created TFile', async () => {
-        const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         expect(result.file).toEqual({ path: 'Entities/People/Sarah.md' });
     });
 
     it('returns the derived title', async () => {
-        const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         expect(result.title).toBe('Sarah');
     });
 
     it('returns the modified line with wikilink', async () => {
-        const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        const result = await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         expect(result.modifiedLine).toBe('[[Sarah]]');
     });
 
     it('writes correct frontmatter content into the file', async () => {
-        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', FIXED_DATE);
+        await nc.create('Sarah #person', PERSON, 'Notes/Daily.md', ALL_ON, FIXED_DATE);
         const content: string = create.mock.calls[0]?.[1] as string;
         expect(content).toContain('title: "Sarah"');
         expect(content).toContain('entity-type: "person"');
@@ -396,19 +419,19 @@ describe('NoteCreator.create', () => {
     });
 
     it('resolves source note name from path', async () => {
-        await nc.create('Sarah #person', PERSON, 'Journals/2026-03-22.md', FIXED_DATE);
+        await nc.create('Sarah #person', PERSON, 'Journals/2026-03-22.md', ALL_ON, FIXED_DATE);
         const content: string = create.mock.calls[0]?.[1] as string;
         expect(content).toContain('source-note: "[[2026-03-22]]"');
     });
 
     it('uses Untitled for an empty source note path', async () => {
-        await nc.create('Sarah #person', PERSON, '', FIXED_DATE);
+        await nc.create('Sarah #person', PERSON, '', ALL_ON, FIXED_DATE);
         const content: string = create.mock.calls[0]?.[1] as string;
         expect(content).toContain('source-note: "[[Untitled]]"');
     });
 
     it('strips list markers when deriving the title', async () => {
-        const result = await nc.create('- Met Sarah #person', PERSON, 'Daily.md', FIXED_DATE);
+        const result = await nc.create('- Met Sarah #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
         expect(result.title).toBe('Met Sarah');
         expect(result.file.path).toBe('Entities/People/Met Sarah.md');
     });
@@ -419,7 +442,7 @@ describe('NoteCreator.create', () => {
                 if (p === 'Entities/People/Sarah.md') return { path: p };
                 return null;
             });
-            const result = await nc.create('Sarah #person', PERSON, 'Daily.md', FIXED_DATE);
+            const result = await nc.create('Sarah #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
             expect(result.title).toBe('Sarah 2');
             expect(result.file.path).toBe('Entities/People/Sarah 2.md');
         });
@@ -430,7 +453,7 @@ describe('NoteCreator.create', () => {
                 if (p === 'Entities/People/Sarah 2.md') return { path: p };
                 return null;
             });
-            const result = await nc.create('Sarah #person', PERSON, 'Daily.md', FIXED_DATE);
+            const result = await nc.create('Sarah #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
             expect(result.title).toBe('Sarah 3');
         });
 
@@ -438,7 +461,7 @@ describe('NoteCreator.create', () => {
             getAbstractFileByPath.mockImplementation((p: string) =>
                 p === 'Entities/People/Sarah.md' ? { path: p } : null,
             );
-            const result = await nc.create('Sarah #person', PERSON, 'Daily.md', FIXED_DATE);
+            const result = await nc.create('Sarah #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
             expect(result.modifiedLine).toBe('[[Sarah 2]]');
         });
     });
@@ -449,6 +472,7 @@ describe('NoteCreator.create', () => {
                 'Redesign the onboarding flow #project',
                 PROJECT,
                 'Daily/Daily Note 2026-03-22.md',
+                ALL_ON,
                 FIXED_DATE,
             );
 

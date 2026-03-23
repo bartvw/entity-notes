@@ -55,9 +55,12 @@ describe('isCursorAtLineEnd', () => {
 
 const PROJECT_SETTINGS: PluginSettings = {
     convertOnEnter: true,
+    includeTitle: true, includeEntityType: true, includeTags: true,
+    includeCreated: true, includeSourceNote: true,
     entityTypes: [
         { id: 'project', name: 'Project', triggerTag: '#project',
-          targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
+          targetFolder: 'Entities/Projects', color: '#e74c3c', enabled: true,
+          frontmatterTemplate: {} },
     ],
 };
 

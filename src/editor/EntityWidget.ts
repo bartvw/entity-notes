@@ -88,6 +88,7 @@ export async function convertLine(
         line.text,
         entityType,
         sourceNotePath,
+        plugin.settings,
     );
 
     // Guard 2 — re-read after the async vault operation; another edit may

@@ -3,16 +3,21 @@ import { PatternMatcher } from './PatternMatcher';
 import { NoteCreator } from './NoteCreator';
 import { TFile } from 'obsidian';
 import type { App } from 'obsidian';
-import type { EntityType } from '../types';
+import type { EntityType, PluginSettings } from '../types';
 
 // Mirror the default entity types without importing settings.ts (which requires obsidian)
 const DEFAULT_ENTITY_TYPES: EntityType[] = [
-    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
-    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
-    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
-    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
-    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, includeTitle: true, includeSourceNote: true, frontmatterTemplate: {} },
+    { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, frontmatterTemplate: {} },
+    { id: 'idea',           name: 'Idea',           triggerTag: '#idea',           targetFolder: 'Entities/Ideas',           color: '#f5a623', enabled: true, frontmatterTemplate: {} },
+    { id: 'accomplishment', name: 'Accomplishment', triggerTag: '#accomplishment', targetFolder: 'Entities/Accomplishments', color: '#7ed321', enabled: true, frontmatterTemplate: {} },
+    { id: 'feedback',       name: 'Feedback',       triggerTag: '#feedback',       targetFolder: 'Entities/Feedback',        color: '#9b59b6', enabled: true, frontmatterTemplate: {} },
+    { id: 'project',        name: 'Project',        triggerTag: '#project',        targetFolder: 'Entities/Projects',        color: '#e74c3c', enabled: true, frontmatterTemplate: {} },
 ];
+
+const ALL_ON: Pick<PluginSettings, 'includeTitle' | 'includeEntityType' | 'includeTags' | 'includeCreated' | 'includeSourceNote'> = {
+    includeTitle: true, includeEntityType: true, includeTags: true,
+    includeCreated: true, includeSourceNote: true,
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,7 +57,7 @@ describe('PatternMatcher + NoteCreator integration', () => {
         // Step 2: NoteCreator creates the note and rewrites the line
         const { app, mockCreate } = makeMockApp();
         const result = await new NoteCreator(app).create(
-            line, matched!, 'Daily Note 2026-03-22.md', FIXED_DATE,
+            line, matched!, 'Daily Note 2026-03-22.md', ALL_ON, FIXED_DATE,
         );
 
         expect(result.title).toBe('Redesign the onboarding flow');
@@ -106,7 +111,7 @@ describe('PatternMatcher + NoteCreator integration', () => {
 
         const { app, mockCreate } = makeMockApp();
         const result = await new NoteCreator(app).create(
-            line, matched!, 'Daily Note 2026-03-22.md', FIXED_DATE,
+            line, matched!, 'Daily Note 2026-03-22.md', ALL_ON, FIXED_DATE,
         );
 
         expect(result.title).toBe('Met Sarah');

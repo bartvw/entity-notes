@@ -65,21 +65,23 @@ If a line contains multiple trigger tags from different entity types, match only
 - If the target folder does not exist, create it
 
 ### Frontmatter
-Every created note gets YAML frontmatter containing the following fields. `title` and `source-note` are optional and controlled by per-entity-type toggles (both default to on):
+Every created note gets YAML frontmatter. All five standard fields are optional and controlled by global toggles in the plugin settings (all default to on):
 
 ```yaml
 ---
 title: "<derived from line text>"          # omitted when includeTitle is false
-entity-type: "<EntityType.id>"
-tags:
+entity-type: "<EntityType.id>"             # omitted when includeEntityType is false
+tags:                                      # omitted when includeTags is false
   - "<EntityType.id>"
-created: "<YYYY-MM-DD>"
+created: "<YYYY-MM-DD>"                    # omitted when includeCreated is false
 source-note: "[[OriginalNoteName]]"        # omitted when includeSourceNote is false
 <...fields from EntityType.frontmatterTemplate...>
 ---
 ```
 
 The `tags` list is seeded with the entity type id. If `frontmatterTemplate` includes additional tags, they are merged into the list rather than replacing it. If a template field conflicts with any other standard field name, the standard field wins.
+
+> **Note:** The entity pill relies on `entity-type` being present in the created note's frontmatter. Disabling `includeEntityType` will prevent pills from appearing for all newly created entity notes.
 
 ### Note body
 Empty after the frontmatter block. The user fills it in.
@@ -165,6 +167,11 @@ When the **Convert on Enter** setting is enabled, pressing Enter at the end of a
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | Convert on Enter | Boolean | Off | When enabled, pressing Enter at the end of a matched line converts it immediately. |
+| Include title | Boolean | On | When off, the `title` field is omitted from all created note frontmatter. |
+| Include entity-type | Boolean | On | When off, the `entity-type` field is omitted; **disabling this will prevent pills from appearing** for all newly created entity notes. |
+| Include tags | Boolean | On | When off, the `tags` field is omitted from all created note frontmatter. |
+| Include created | Boolean | On | When off, the `created` field is omitted from all created note frontmatter. |
+| Include source-note | Boolean | On | When off, the `source-note` field is omitted from all created note frontmatter. |
 
 ### Entity type fields
 Each entity type has:
@@ -174,8 +181,6 @@ Each entity type has:
 - `targetFolder` — vault path for created notes (e.g. `Entities/People`)
 - `color` — background color for the entity pill (e.g. `#4a90d9`); a sensible default is provided for each built-in type
 - `enabled` — boolean, defaults to true; disabled entity types are ignored by the editor plugin
-- `includeTitle` — boolean, defaults to true; when false, the `title` field is omitted from created note frontmatter
-- `includeSourceNote` — boolean, defaults to true; when false, the `source-note` field is omitted from created note frontmatter
 - `frontmatterTemplate` — key-value pairs added to created note frontmatter, defaults to empty
 - `basesFile` — reserved for future use; not exposed in the UI and not used in v1
 
@@ -183,7 +188,6 @@ Each entity type has:
 - Entity types are listed with their name, trigger tag, and color pill visible
 - Each entry has an enabled toggle, an edit button, and a delete button
 - Editing an entity type exposes a color picker for the pill color
-- Editing an entity type exposes toggles for **Include title** and **Include source note** (both default to on)
 - A button allows adding a new entity type
 - Deleting an entity type does not delete any notes already created by it
 - Changes take effect immediately without restarting the plugin

@@ -52,10 +52,11 @@ export default class EntityNotesPlugin extends Plugin {
             await this.loadData() as Partial<PluginSettings>,
         );
         // Migration: backfill fields added after initial release.
-        for (const et of this.settings.entityTypes) {
-            et.includeTitle       ??= true;
-            et.includeSourceNote  ??= true;
-        }
+        this.settings.includeTitle       ??= true;
+        this.settings.includeEntityType  ??= true;
+        this.settings.includeTags        ??= true;
+        this.settings.includeCreated     ??= true;
+        this.settings.includeSourceNote  ??= true;
     }
 
     async saveSettings() {
