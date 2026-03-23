@@ -1,7 +1,7 @@
 {
 	"id": "entity-notes",
 	"name": "Entity Notes",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"minAppVersion": "1.12.4",
 	"description": "Converts tagged entities into notes with backlinks to the original note.",
 	"author": "Bart van Wissen",
