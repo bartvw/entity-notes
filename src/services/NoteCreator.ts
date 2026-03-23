@@ -74,11 +74,11 @@ export class NoteCreator {
 
     /**
      * Replaces the entire source line with just `[[noteTitle]]`, preserving
-     * any leading list marker (e.g. `- `, `* `, `1. `).
+     * any leading whitespace (indentation) and list marker (e.g. `  - `).
      */
     static buildModifiedLine(lineText: string, _triggerTag: string, noteTitle: string): string {
-        const listMarkerMatch = lineText.match(/^([-*+]|\d+[.)]) /);
-        const prefix = listMarkerMatch ? listMarkerMatch[0] : '';
+        const listMarkerMatch = lineText.match(/^(\s*)([-*+]|\d+[.)]) /);
+        const prefix = listMarkerMatch ? `${listMarkerMatch[1]}${listMarkerMatch[2]} ` : '';
         return `${prefix}[[${noteTitle}]]`;
     }
 

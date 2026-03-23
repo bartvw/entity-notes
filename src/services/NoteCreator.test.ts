@@ -144,6 +144,16 @@ describe('NoteCreator.buildModifiedLine', () => {
         expect(NoteCreator.buildModifiedLine('1. Buy milk #task', '#task', 'Buy milk'))
             .toBe('1. [[Buy milk]]');
     });
+
+    it('preserves leading indentation on an indented list item', () => {
+        expect(NoteCreator.buildModifiedLine('  - Met Sarah #person', '#person', 'Met Sarah'))
+            .toBe('  - [[Met Sarah]]');
+    });
+
+    it('preserves deeper indentation on an indented list item', () => {
+        expect(NoteCreator.buildModifiedLine('    - Met Sarah #person', '#person', 'Met Sarah'))
+            .toBe('    - [[Met Sarah]]');
+    });
 });
 
 // ---------------------------------------------------------------------------

@@ -88,6 +88,7 @@ Empty after the frontmatter block. The user fills it in.
 - The note is created silently. It is not opened or focused.
 - The entire source line is replaced with just the wikilink: `[[NoteFilename]]`
 - If the line was a list item (e.g. `- `), the list marker is preserved: `- [[NoteFilename]]`
+- Leading whitespace (indentation) is preserved: `  - [[NoteFilename]]` for an indented bullet
 
 ---
 
@@ -193,6 +194,7 @@ Each entity type has:
 - **Note filename collision**: append incrementing number as described above
 - **Source note has no title**: use the source file's basename
 - **Line is a list item** (e.g. `- Met Sarah #person`): strip the list marker from the derived title, so the note is named `Met Sarah` not `- Met Sarah`
+- **Indented list item** (e.g. `  - Met Sarah #person`): preserve the leading whitespace in the replaced line (`  - [[Met Sarah]]`); strip both the indentation and list marker from the derived title
 - **Trigger tag mid-line** (e.g. `#person Sarah attended the meeting`): still matches; title derived from full line text minus the tag
 - **Multiple spaces around tag**: normalize to single space when building the modified line
 - **The source note is untitled / new unsaved note**: use `Untitled` as the `source-note` value
