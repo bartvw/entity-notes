@@ -37,7 +37,7 @@ export class EntityNotesSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        new Setting(containerEl).setName('General preferences').setHeading();
+        new Setting(containerEl).setName('Preferences').setHeading();
 
         new Setting(containerEl)
             .setName('Convert on enter')
@@ -153,7 +153,7 @@ export class EntityNotesSettingTab extends PluginSettingTab {
             nameInput.type = 'text';
             nameInput.value = field.name;
             nameInput.disabled = !field.enabled;
-            nameInput.addEventListener('change', async () => {
+            nameInput.addEventListener('change', () => {
                 const trimmed = nameInput.value.trim();
                 if (!trimmed) {
                     nameInput.value = field.name; // revert empty input
@@ -168,7 +168,7 @@ export class EntityNotesSettingTab extends PluginSettingTab {
                     return;
                 }
                 field.name = trimmed;
-                await this.plugin.saveSettings();
+                void this.plugin.saveSettings();
             });
             nameInputs.push(nameInput);
 

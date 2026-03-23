@@ -8,11 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **Configurable frontmatter fields.** Each of the five standard fields (`title`, `entity-type`, `tags`, `created`, `source-note`) can now be toggled on/off and given a custom field name. Settings are global (apply to all entity types) and live under a new "Default frontmatter" section in the settings screen. Changing a name affects all notes created after saving; existing notes are not modified. Duplicate field names are rejected with a notice.
-- **Configurable entity identification.** A new "Identify entities by" setting (General Preferences) controls how the plugin detects entity notes for pill display: by the entity-type property (default) or by tags. In Tags mode, a note whose tags field contains multiple entity type ids shows a pill for each.
+- **Configurable entity identification.** A new "Identify entities by" setting (Preferences) controls how the plugin detects entity notes for pill display: by the entity-type property (default) or by tags. In Tags mode, a note whose tags field contains multiple entity type ids shows a pill for each.
 
 ### Changed
 
-- Settings screen is now structured in three sections: General Preferences → Default frontmatter → Entities.
+- Settings screen is now structured in three sections: Preferences → Default frontmatter → Entities.
 
 ## [1.0.5] - 2026-03-23
 
