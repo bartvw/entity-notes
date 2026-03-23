@@ -9,6 +9,7 @@ export default defineConfig({
     test: {
         coverage: {
             provider: 'v8',
+            include: ['src/**/*.ts'],
             // Exclude files that require the Obsidian/CM6 runtime and cannot
             // be exercised in the Vitest environment.
             exclude: [
@@ -21,11 +22,6 @@ export default defineConfig({
                 'src/editor/EntityButtonPlugin.ts',
                 'src/editor/EntityPillWidget.ts',
                 'src/editor/EntityWidget.ts',
-                // Root-level build/config scripts — not application code
-                '*.mjs',
-                '*.mts',
-                '*.ts',
-                'main.js',
             ],
         },
     },
