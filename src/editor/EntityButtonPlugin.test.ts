@@ -55,6 +55,7 @@ describe('isCursorAtLineEnd', () => {
 
 const PROJECT_SETTINGS: PluginSettings = {
     convertOnEnter: true,
+    entityIdentification: 'entity-type-field',
     titleField:      { enabled: true, name: 'title' },
     entityTypeField: { enabled: true, name: 'entity-type' },
     tagsField:       { enabled: true, name: 'tags' },
