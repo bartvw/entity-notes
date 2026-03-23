@@ -4,6 +4,8 @@ An Obsidian plugin that watches the editor for lines matching user-configured pa
 
 This is conceptually the same as the "inline task to note" flow in the TaskNotes plugin (https://github.com/callumalpass/tasknotes), but generalized to any user-defined entity type.
 
+**Behavior specification:** See `SPEC.md` — it is the source of truth for intended behavior. When in doubt about how something should work, defer to that file.
+
 ---
 
 ## Project structure
