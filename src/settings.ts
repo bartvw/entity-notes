@@ -36,6 +36,8 @@ export class EntityNotesSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
+        new Setting(containerEl).setName('General preferences').setHeading();
+
         new Setting(containerEl)
             .setName('Convert on enter')
             .setDesc('When enabled, pressing enter at the end of a matched line converts it immediately.')
@@ -47,9 +49,11 @@ export class EntityNotesSettingTab extends PluginSettingTab {
                 }),
             );
 
-        new Setting(containerEl).setName('Frontmatter fields').setHeading();
+        new Setting(containerEl).setName('Default frontmatter').setHeading();
 
         this.buildFrontmatterTable(containerEl);
+
+        new Setting(containerEl).setName('Entities').setHeading();
 
         const entityTypes = this.plugin.settings.entityTypes;
 
@@ -117,6 +121,9 @@ export class EntityNotesSettingTab extends PluginSettingTab {
 
         const tbody = table.createEl('tbody');
 
+        // Collect inputs after the loop so each handler can inspect all sibling inputs.
+        const nameInputs: HTMLInputElement[] = [];
+
         for (const row of rows) {
             const field = this.plugin.settings[row.key];
             const tr = tbody.createEl('tr');
@@ -134,13 +141,22 @@ export class EntityNotesSettingTab extends PluginSettingTab {
             nameInput.disabled = !field.enabled;
             nameInput.addEventListener('change', async () => {
                 const trimmed = nameInput.value.trim();
-                if (trimmed) {
-                    field.name = trimmed;
-                    await this.plugin.saveSettings();
-                } else {
+                if (!trimmed) {
                     nameInput.value = field.name; // revert empty input
+                    return;
                 }
+                const duplicate = nameInputs.some(
+                    other => other !== nameInput && other.value.trim() === trimmed,
+                );
+                if (duplicate) {
+                    new Notice(`"${trimmed}" is already used by another frontmatter field.`);
+                    nameInput.value = field.name; // revert duplicate
+                    return;
+                }
+                field.name = trimmed;
+                await this.plugin.saveSettings();
             });
+            nameInputs.push(nameInput);
 
             // Column 3: toggle
             const tdToggle = tr.createEl('td');
@@ -265,7 +281,7 @@ class EntityTypeModal extends Modal {
         new Setting(el).setName('Frontmatter template').setHeading();
         el.createEl('p', {
             text: 'Extra fields written into every note created by this entity type. '
-                + 'Standard fields (title, entity-type, tags, created, source-note) cannot be overridden here — use the toggles above instead. '
+                + 'Standard fields (title, entity-type, tags, created, source-note) cannot be overridden here. '
                 + 'For the tags key, enter a comma-separated list to add multiple tags.',
             cls: 'setting-item-description',
         });
