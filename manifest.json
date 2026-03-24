@@ -1,7 +1,7 @@
 {
 	"id": "entity-notes",
 	"name": "Entity Notes",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"minAppVersion": "1.12.4",
 	"description": "Convert tagged lines into structured Markdown notes with one click. Supports custom entity types such as #project, #idea, and #person, each with configurable frontmatter and a color-coded pill in the editor.",
 	"author": "Bart van Wissen",
