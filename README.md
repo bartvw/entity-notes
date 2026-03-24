@@ -141,3 +141,7 @@ Yes. Enable the "Trigger Templater on new file creation" setting in Templater an
 MIT — see [LICENSE](LICENSE).
 
 Inspired by the inline task-to-note conversion pattern in [TaskNotes](https://github.com/callumalpass/tasknotes) by Callum Alpass.
+
+## Links
+
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/entity-notes)
