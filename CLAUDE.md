@@ -193,7 +193,6 @@ On first install, seed the following default entity types:
 | accomplishment | Accomplishment | `#accomplishment`| `Entities/Accomplishments` | `#7ed321` |
 | feedback       | Feedback       | `#feedback`      | `Entities/Feedback`        | `#9b59b6` |
 | project        | Project        | `#project`       | `Entities/Projects`        | `#e74c3c` |
-| task           | Task           | `#task`          | `Entities/Tasks`           | `#1abc9c` |
 
 ---
 

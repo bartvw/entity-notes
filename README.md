@@ -4,17 +4,47 @@ An [Obsidian](https://obsidian.md) plugin that watches your editor for lines con
 
 ## How it works
 
-1. Type a line containing a trigger tag, for example:
+There are two conversion modes, chosen automatically based on what's on the line.
+
+### Line conversion
+
+When the trigger tag appears on a line that doesn't have an unresolved `[[wikilink]]` directly before it, the entire line is converted:
+
+1. Type a line containing a trigger tag:
    ```
    Redesign the onboarding flow #project
    ```
-2. A small `→ Project` button appears at the end of the line.
+2. A small `→ Project` button appears immediately after `#project`.
 3. Click it. The plugin:
-   - Creates `Entities/Projects/Redesign the onboarding flow.md` with frontmatter
+   - Creates `Entities/Projects/Redesign the onboarding flow.md` with frontmatter and a note body
    - Replaces the line with `[[Redesign the onboarding flow]]`
    - Renders a colored `project` pill badge after the link (decoration only — not written to the file)
 
 List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alice]]`.
+
+### Wikilink conversion
+
+When the trigger tag appears directly after an unresolved `[[wikilink]]`, only that wikilink is converted:
+
+1. Write a wikilink that doesn't yet have a note, followed by a trigger tag:
+   ```
+   [[Project Alpha]] #project
+   ```
+2. A `→ Project` button appears after `#project`.
+3. Click it. The plugin:
+   - Creates `Entities/Projects/Project Alpha.md` with frontmatter (no note body)
+   - Strips `#project` from the source line, leaving `[[Project Alpha]]` in place — which now resolves to the new note
+   - Renders a `project` pill badge after the link
+
+### Multiple entities on one line
+
+A line can have multiple buttons — one per unresolved wikilink+tag pair:
+
+```
+[[Alice]] #person [[Project Alpha]] #project
+```
+
+Each button converts only its own wikilink. Clicking `→ Person` creates `Alice.md` and strips `#person`; the rest of the line is unchanged until you click `→ Project`.
 
 ## Default entity types
 
@@ -32,7 +62,16 @@ All defaults can be edited or deleted, and you can add your own entity types.
 
 ### Global
 
-- **Convert on enter** (default: off) — when enabled, pressing Enter at the end of a matched line triggers the conversion immediately, without clicking the button. A newline is still inserted as normal. The button remains visible and continues to work alongside this setting.
+- **Convert on enter** (default: off) — when enabled, pressing Enter at the end of a matched line triggers conversion immediately, without clicking the button. All matches on the line are converted at once. A newline is still inserted as normal.
+- **Identify entities by** (default: Entity-type property) — controls how the plugin recognises entity notes for pill display:
+  - *Entity-type property* — the `entity-type` frontmatter field must be present and match an entity type id. At most one pill per link.
+  - *Tag* — the `tags` frontmatter field must contain one or more entity type ids. One pill per matching tag; a single note can match multiple types.
+
+### Frontmatter fields
+
+Each of the five standard frontmatter fields has an **enabled** toggle and a configurable **field name** (the YAML key written to created notes). All are on by default with the names shown in the [Created note format](#created-note-format) section. You can rename them (e.g. `title` → `note-title`) to match your vault's property conventions; existing notes are not affected.
+
+> **Note:** When using *Entity-type property* mode, disabling the `entity-type` field will prevent pills from appearing on newly created entity notes.
 
 ### Per entity type
 
@@ -47,7 +86,9 @@ Changes take effect immediately without reloading the plugin.
 
 ## Created note format
 
-```yaml
+**Line conversion** creates a note with frontmatter and a body:
+
+```markdown
 ---
 title: "Redesign the onboarding flow"
 entity-type: "project"
@@ -56,9 +97,15 @@ tags:
 created: "2026-03-22"
 source-note: "[[Daily Note 2026-03-22]]"
 ---
+
+Redesign the onboarding flow
 ```
 
-Standard fields (`title`, `entity-type`, `tags`, `created`, `source-note`) are always included. Fields from the frontmatter template are appended. If the template defines additional tags, they are merged into the `tags` list rather than replacing it.
+The note body contains the line text with the trigger tag and list markers stripped. Wikilinks embedded in the line are preserved in full in both the title field and the body, while the filename strips the brackets (`[[Alice]]` → `Alice`).
+
+**Wikilink conversion** creates a note with frontmatter only (no body). The title field is the bare link text.
+
+All five standard fields are optional and their names are configurable (see [Frontmatter fields](#frontmatter-fields) above). Fields from the frontmatter template are appended after the standard fields. Template tags are merged into the `tags` list; any template key that matches a standard field name is ignored (standard fields always win).
 
 ## Installation
 
@@ -82,7 +129,7 @@ Copy (or symlink) the folder into `<vault>/.obsidian/plugins/entity-notes/` and 
 ## FAQ
 
 **Does it work alongside [TaskNotes](https://github.com/callumalpass/tasknotes)?**
-Yes — it's designed to complement TaskNotes. Just don't configure `#task` as an entity type in this plugin, since TaskNotes already owns that tag.
+Yes — it's designed to complement TaskNotes. Both plugins can be active at the same time.
 
 **Does it work with [Templater](https://github.com/SilentVoid13/Templater)?**
 Yes. Enable the "Trigger Templater on new file creation" setting in Templater and it will apply your template to each newly created entity note.
