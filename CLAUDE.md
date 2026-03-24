@@ -60,9 +60,23 @@ interface EntityType {
   basesFile?: string;           // reserved for future use — not implemented in v1
 }
 
+// Each of the 5 standard frontmatter fields has a configurable YAML key name and enabled toggle
+interface FrontmatterField {
+  enabled: boolean;
+  name: string;                 // the YAML property key written to the file (e.g. "title", "entity-type")
+}
+
+type EntityIdentificationMethod = 'entity-type-field' | 'tags';
+
 interface PluginSettings {
   entityTypes: EntityType[];
-  convertOnEnter: boolean;       // trigger conversion on Enter at end of matched line, default false
+  convertOnEnter: boolean;               // trigger conversion on Enter at end of matched line, default false
+  entityIdentification: EntityIdentificationMethod; // how pills detect entity notes, default 'entity-type-field'
+  titleField: FrontmatterField;          // default: { enabled: true, name: 'title' }
+  entityTypeField: FrontmatterField;     // default: { enabled: true, name: 'entity-type' }
+  tagsField: FrontmatterField;           // default: { enabled: true, name: 'tags' }
+  createdField: FrontmatterField;        // default: { enabled: true, name: 'created' }
+  sourceNoteField: FrontmatterField;     // default: { enabled: true, name: 'source-note' }
 }
 ```
 
@@ -87,16 +101,16 @@ import { Range } from "@codemirror/state";
 The `EntityButtonPlugin` is a CM6 `ViewPlugin`. It:
 1. Runs on every `update` where `update.docChanged || update.viewportChanged || settingsVersion changed`
 2. Iterates visible line ranges with `view.visibleRanges`
-3. For each line, calls `PatternMatcher` to check for a matching EntityType
-4. If a match is found, adds a `Decoration.widget` (convert button) at the end of the line
-5. Otherwise, checks if the line contains a `[[wikilink]]` to a known entity note and adds a pill `Decoration.widget` after the `]]`
+3. For each line, calls `PatternMatcher.matchAll()` to find all conversion opportunities
+4. For each match, adds a `Decoration.widget` (convert button) **immediately after the trigger tag** — a line can have multiple buttons (one per unresolved wikilink+tag pair)
+5. Otherwise, iterates all `[[wikilinks]]` on the line; for each that resolves to a known entity note, adds a pill `Decoration.widget` after the `]]`
 6. Returns a `DecorationSet`
 
 The `settingsVersion` counter on the plugin is incremented by `saveSettings()` and also by a `metadataCache.on('changed')` listener registered in `main.ts`. This causes the ViewPlugin to rebuild decorations immediately after settings changes or after a new note is indexed by the cache (so the pill appears right after conversion).
 
-The `EntityButtonPlugin` also registers an Enter keymap at `Prec.highest` (so it runs before Obsidian's own handlers). When `convertOnEnter` is enabled and the cursor is at the end of a matched line, it fires `convertLine` and returns `false` to let the default handler still insert a newline. The synchronous match detection is extracted into `findMatchForEnter` in `keymapUtils.ts` for unit testability.
+The `EntityButtonPlugin` also registers an Enter keymap at `Prec.highest` (so it runs before Obsidian's own handlers). When `convertOnEnter` is enabled and the cursor is at the end of a matched line, it fires `convertAllOnLine` (which converts **all** matches on the line at once) and returns `false` to let the default handler still insert a newline. The synchronous match detection is extracted into `findMatchForEnter` in `keymapUtils.ts` for unit testability.
 
-The `EntityWidget` is a CM6 `WidgetType`. It renders a small button element. On click, it calls `convertLine` (shared with the Enter keymap handler).
+The `EntityWidget` is a CM6 `WidgetType`. It renders a small button element. On click, it calls `convertLine` (handles the single match that button belongs to).
 
 Reference: TaskNotes uses this same pattern in `src/editor/InstantConvertButtons.ts` and `src/editor/TaskLinkWidget.ts`.
 
@@ -104,22 +118,41 @@ Reference: TaskNotes uses this same pattern in `src/editor/InstantConvertButtons
 
 ## Note creation behavior
 
-When the button is clicked, `NoteCreator`:
-1. Extracts the note title from the line text (strips the trigger tag and list marker if present, sanitizes for use as a filename)
-2. Creates the file at `{targetFolder}/{title}.md`
-3. Writes YAML frontmatter from `EntityType.frontmatterTemplate`, plus:
-   - `title: <derived from line text>`
-   - `entity-type: <EntityType.id>`
-   - `tags: [<EntityType.id>]` — seeded with the entity type id; merged with any tags from `frontmatterTemplate`
-   - `created: <ISO date>`
-   - `source-note: [[OriginalNoteName]]`
-4. Replaces the entire source line with `[[title]]`, preserving any list marker (e.g. `- [[title]]`)
+There are two conversion types depending on what precedes the trigger tag:
+
+**Wikilink conversion** — the tag follows an unresolved `[[wikilink]]`:
+- Filename and title field are the bare wikilink text (brackets stripped)
+- The source line has only the trigger tag (and preceding whitespace) removed; the wikilink stays in place
+- No note body is written
+
+**Line conversion** — the tag appears on a line without a preceding unresolved wikilink:
+- Filename is derived from the full line minus the tag and list markers, with wikilinks unwrapped (`[[Alice]]` → `Alice`), sanitized for the filesystem
+- The entire source line is replaced with `[[filename]]`, preserving any list marker and leading indentation
+- The note body is the line text with the tag and list markers stripped, wikilinks preserved in full
+
+In both cases, `NoteCreator`:
+1. Derives the filename (`deriveTitle`) and the title-field value (`deriveText`) from the line
+2. Creates the file at `{targetFolder}/{filename}.md` (appends ` 2`, ` 3`, … on collision)
+3. Writes YAML frontmatter. Each of the 5 standard fields is individually enabled/disabled and has a configurable YAML key name (from `PluginSettings`):
+   - `title` field — the bare link text (wikilink conversion) or `deriveText` result (line conversion)
+   - `entity-type` field — `EntityType.id`
+   - `tags` field — seeded with `EntityType.id`; additional tags from `frontmatterTemplate` are merged in
+   - `created` field — ISO date (YYYY-MM-DD)
+   - `source-note` field — `[[SourceNoteName]]`
+   - Extra fields from `EntityType.frontmatterTemplate` are appended; standard field names always win
+4. For line conversion, appends the body text after a blank line following the frontmatter
 
 ---
 
 ## Entity pill
 
-After conversion, the plugin detects wikilinks to known entity notes (identified by `entity-type` in the note's frontmatter via `app.metadataCache`) and renders a styled pill badge after the link. The pill is visual only — never written to the file.
+After conversion, the plugin detects wikilinks to known entity notes and renders a styled pill badge after the link. The pill is visual only — never written to the file.
+
+Entity identification is controlled by `entityIdentification` in settings:
+- `'entity-type-field'` (default) — the configured entity-type field (default key `entity-type`) must be present in the note's frontmatter and its value must match an enabled entity type id. At most one pill per link.
+- `'tags'` — the configured tags field must contain one or more enabled entity type ids. One pill per matching tag.
+
+Detection uses `resolveEntitiesFromFrontmatter` which reads `app.metadataCache` — no custom indexing.
 
 - Background color comes from `EntityType.color`
 - Label is `EntityType.name` in lowercase
@@ -138,6 +171,8 @@ Two mechanisms, same visual output:
 
 Global settings:
 - **Convert on enter** — boolean toggle (default off); when enabled, pressing Enter at the end of a matched line triggers conversion
+- **Identify entities by** — enum (`entity-type-field` | `tags`), controls pill detection mode (see Entity pill section above)
+- **Frontmatter fields table** — 5 rows (Title, Entity type, Tags, Created, Source note); each row has an editable field-name input and an enabled toggle; disabling a field greys out its name input
 
 The settings tab allows the user to add, edit, and delete entity types. Each entity type exposes:
 - Name (display label)
@@ -158,6 +193,7 @@ On first install, seed the following default entity types:
 | accomplishment | Accomplishment | `#accomplishment`| `Entities/Accomplishments` | `#7ed321` |
 | feedback       | Feedback       | `#feedback`      | `Entities/Feedback`        | `#9b59b6` |
 | project        | Project        | `#project`       | `Entities/Projects`        | `#e74c3c` |
+| task           | Task           | `#task`          | `Entities/Tasks`           | `#1abc9c` |
 
 ---
 
