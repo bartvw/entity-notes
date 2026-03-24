@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-03-25
+
+### Added
+
+- **Wikilink conversion.** When a trigger tag appears directly after an unresolved `[[wikilink]]`, a convert button now appears after the tag. Clicking it creates an entity note from the wikilink text and strips only the tag from the source line — the wikilink stays in place and now resolves to the new note. Previously the entire line was always replaced.
+- **Multiple convert buttons per line.** A line with several unresolved wikilink+tag pairs (e.g. `[[Alice]] #person [[Project Alpha]] #project`) now shows a separate button for each pair. Each button converts only its own wikilink independently.
+- **Convert on Enter converts all matches.** When Convert on Enter is enabled, pressing Enter at the end of a line with multiple unresolved wikilink+tag pairs creates all the entity notes and strips all the tags in one operation.
+
+### Changed
+
+- **Convert button placement.** The `→ EntityType` button now appears immediately after its trigger tag instead of at the end of the line, making it clear which tag each button belongs to.
+- **Wikilinks in filenames are unwrapped.** When deriving a filename from a line that contains wikilinks (e.g. `Talked to [[Alice]] #person`), the brackets are stripped but the link text is kept — the note is named `Talked to Alice` rather than `Talked to`.
+- **Title frontmatter field preserves wikilinks.** For line conversions, the `title` field now contains the line text with embedded wikilinks kept in full (e.g. `Talked to [[Alice]]`), while the filename strips the brackets. For wikilink conversions, the title field is the bare link text as before.
+- **Note body.** Line conversions now include a note body containing the line text with the trigger tag and list/task markers stripped. Wikilink conversions produce no body. This replaces the previous behavior of writing only frontmatter for all conversions.
+
 ## [1.1.0] - 2026-03-23
 
 ### Added

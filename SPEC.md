@@ -123,7 +123,7 @@ source-note: "[[OriginalNoteName]]"              # name configurable; omitted wh
 
 The **title field** value depends on the conversion type:
 - **Wikilink conversion**: the bare wikilink text, without brackets (identical to the filename). For `[[Project Alpha]] #project` this is `Project Alpha`.
-- **Line conversion**: the line text (minus the trigger tag, leading whitespace, and list/task markers), with any embedded wikilinks preserved in full. For `- Talked to [[Alice]] #person` this is `Talked to [[Alice]]`, while the filename strips the brackets to `Talked to Alice`.
+- **Line conversion**: the line text (minus the trigger tag, leading whitespace, and list/task markers), with any embedded wikilinks preserved in full. For `- Expand on [[Dark mode]] concept #idea` this is `Expand on [[Dark mode]] concept`, while the filename strips the brackets to `Expand on Dark mode concept`.
 
 The `tags` list is seeded with the entity type id. If `frontmatterTemplate` includes additional tags, they are merged into the list rather than replacing it. If a template field's key matches the configured name of any standard field, the standard field wins.
 
