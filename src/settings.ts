@@ -268,9 +268,7 @@ class EntityTypeModal extends Modal {
             .setName('Target folder')
             .setDesc('Vault path where entity notes are created, e.g. Entities/People')
             .addText(text => {
-                // eslint-disable-next-line obsidianmd/ui/sentence-case -- placeholder is a vault path, not a UI sentence
-                text.setPlaceholder('Entities/People')
-                    .setValue(this.draft.targetFolder)
+                text.setValue(this.draft.targetFolder)
                     .onChange(v => { this.draft.targetFolder = v; });
             });
 
