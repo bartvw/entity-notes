@@ -44,7 +44,17 @@ export class NoteCreator {
         await this.ensureFolder(targetFolder);
 
         const { filePath, title } = this.resolveFilePath(targetFolder, rawTitle);
-        const content = NoteCreator.buildContent(title, entityType, sourceNoteName, date, options);
+
+        // For wikilink conversion: title field = bare text (same as filename).
+        // For line conversion: title field = line text with wikilinks preserved in full.
+        const titleFieldValue = linkText !== undefined
+            ? title
+            : NoteCreator.deriveText(lineText, entityType.triggerTag);
+        // For line conversion: body = line text with tag and markers stripped.
+        // For wikilink conversion: no body (the wikilink itself is the note's identifier).
+        const body = linkText !== undefined ? undefined : NoteCreator.deriveText(lineText, entityType.triggerTag);
+
+        const content = NoteCreator.buildContent(titleFieldValue, entityType, sourceNoteName, date, options, body);
         const file = await this.app.vault.create(filePath, content);
         const modifiedLine = linkText !== undefined
             ? NoteCreator.buildModifiedLineCase1(lineText, entityType.triggerTag)
@@ -58,17 +68,17 @@ export class NoteCreator {
     // ---------------------------------------------------------------------------
 
     /**
-     * Derives the note title from a matched editor line:
-     * strips the trigger tag, strips leading markdown list / task markers,
-     * normalises whitespace, then sanitises the result for use as a filename.
+     * Derives the note filename from a matched editor line:
+     * strips the trigger tag, unwraps wikilinks (brackets stripped, inner text kept),
+     * strips leading markdown list / task markers, normalises whitespace,
+     * then sanitises the result for use as a filename.
      */
     static deriveTitle(lineText: string, triggerTag: string): string {
         const re = NoteCreator.tagRegex(triggerTag);
         let s = lineText.replace(re, ' ').trim();
 
-        // Strip wikilinks — they must not appear in the derived title because the
-        // modified line wraps the title in [[ ]], which would produce [[[[...]]]]
-        s = s.replace(/\[\[[^\]]*\]\]/g, ' ').trim();
+        // Unwrap wikilinks: [[Alice]] → Alice, [[Alice|Alias]] → Alice
+        s = s.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, '$1').trim();
 
         // Strip leading list / task markers (same order as PatternMatcher)
         s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
@@ -78,6 +88,26 @@ export class NoteCreator {
         s = s.replace(/\s+/g, ' ').trim();
 
         return NoteCreator.sanitizeFilename(s);
+    }
+
+    /**
+     * Derives the text content for a line conversion — used for both the title
+     * frontmatter field and the note body.
+     *
+     * Strips the trigger tag, strips leading markdown list / task markers,
+     * normalises whitespace, but preserves wikilinks in full (unlike
+     * `deriveTitle` which unwraps them). Not sanitised for use as a filename.
+     */
+    static deriveText(lineText: string, triggerTag: string): string {
+        const re = NoteCreator.tagRegex(triggerTag);
+        let s = lineText.replace(re, ' ').trim();
+
+        // Strip leading list / task markers (same order as PatternMatcher)
+        s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
+        s = s.replace(/^[-*+]\s*/, '').trim();     // "- " / "* " / "+ "
+        s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // "[ ] " / "[x] "
+
+        return s.replace(/\s+/g, ' ').trim();
     }
 
     /**
@@ -108,16 +138,20 @@ export class NoteCreator {
     }
 
     /**
-     * Builds the full note content (YAML frontmatter block + empty body).
+     * Builds the full note content (YAML frontmatter block + optional body).
+     * When `body` is provided (line conversion), it is appended after a blank line.
+     * When omitted (wikilink conversion), only the frontmatter is written.
      */
     static buildContent(
-        title: string,
+        titleFieldValue: string,
         entityType: EntityType,
         sourceNoteName: string,
         date: string,
         options: FrontmatterOptions,
+        body?: string,
     ): string {
-        return NoteCreator.buildFrontmatter(title, entityType, sourceNoteName, date, options) + '\n';
+        const fm = NoteCreator.buildFrontmatter(titleFieldValue, entityType, sourceNoteName, date, options);
+        return body !== undefined ? `${fm}\n\n${body}\n` : `${fm}\n`;
     }
 
     /**

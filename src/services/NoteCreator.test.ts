@@ -79,18 +79,56 @@ describe('NoteCreator.deriveTitle', () => {
         expect(NoteCreator.deriveTitle('#personality trait', '#person')).toBe('#personality trait');
     });
 
-    it('strips a wikilink from the title', () => {
-        expect(NoteCreator.deriveTitle('Met [[Alice]] #person', '#person')).toBe('Met');
+    it('unwraps a wikilink in the title (brackets stripped, text kept)', () => {
+        expect(NoteCreator.deriveTitle('Met [[Alice]] #person', '#person')).toBe('Met Alice');
     });
 
-    it('strips multiple wikilinks from the title', () => {
+    it('unwraps multiple wikilinks in the title', () => {
         expect(NoteCreator.deriveTitle('Discussion with [[Alice]] and [[Bob]] #person', '#person'))
-            .toBe('Discussion with and');
+            .toBe('Discussion with Alice and Bob');
+    });
+
+    it('unwraps a wikilink with an alias (uses link target, not alias)', () => {
+        expect(NoteCreator.deriveTitle('Met [[Alice|Ali]] #person', '#person')).toBe('Met Alice');
     });
 
     it('applies filename sanitization', () => {
         expect(NoteCreator.deriveTitle('Meeting: Q1 "plan" #person', '#person'))
             .toBe('Meeting Q1 plan');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// NoteCreator.deriveText
+// ---------------------------------------------------------------------------
+
+describe('NoteCreator.deriveText', () => {
+    it('strips the trigger tag', () => {
+        expect(NoteCreator.deriveText('Sarah #person', '#person')).toBe('Sarah');
+    });
+
+    it('preserves wikilinks in full', () => {
+        expect(NoteCreator.deriveText('Talked to [[Alice]] #person', '#person'))
+            .toBe('Talked to [[Alice]]');
+    });
+
+    it('preserves multiple wikilinks', () => {
+        expect(NoteCreator.deriveText('Met [[Alice]] and [[Bob]] #person', '#person'))
+            .toBe('Met [[Alice]] and [[Bob]]');
+    });
+
+    it('strips a leading list marker', () => {
+        expect(NoteCreator.deriveText('- Met Sarah #person', '#person')).toBe('Met Sarah');
+    });
+
+    it('strips a leading task checkbox', () => {
+        expect(NoteCreator.deriveText('- [ ] Reach out to [[Alice]] #person', '#person'))
+            .toBe('Reach out to [[Alice]]');
+    });
+
+    it('does not sanitize for filenames (preserves colons etc.)', () => {
+        expect(NoteCreator.deriveText('Meeting: Q1 plan #project', '#project'))
+            .toBe('Meeting: Q1 plan');
     });
 });
 
@@ -602,6 +640,27 @@ describe('NoteCreator.create', () => {
         });
     });
 
+    it('line conversion: body contains line text with tag and list markers stripped', async () => {
+        const result = await nc.create('- Met Sarah #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
+        const content: string = create.mock.calls[0]?.[1] as string;
+        expect(content).toContain('Met Sarah');
+        expect(result.modifiedLine).toBe('- [[Met Sarah]]');
+    });
+
+    it('wikilink conversion: no body in note content', async () => {
+        await nc.create('[[Sarah]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE, 'Sarah');
+        const content: string = create.mock.calls[0]?.[1] as string;
+        // content should end right after the closing --- with just a newline
+        expect(content).toMatch(/^---\n[\s\S]*\n---\n$/);
+    });
+
+    it('line conversion: title field and body both preserve wikilinks and strip the tag', async () => {
+        await nc.create('Talked to [[Alice]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
+        const content: string = create.mock.calls[0]?.[1] as string;
+        expect(content).toContain('title: "Talked to [[Alice]]"');
+        expect(content).toContain('\n\nTalked to [[Alice]]\n');
+    });
+
     describe('spec example (end-to-end)', () => {
         it('matches the spec example exactly', async () => {
             const result = await nc.create(
@@ -615,11 +674,17 @@ describe('NoteCreator.create', () => {
             expect(result.modifiedLine).toBe('[[Redesign the onboarding flow]]');
 
             const content: string = create.mock.calls[0]?.[1] as string;
-            expect(content).toContain('title: "Redesign the onboarding flow"');
-            expect(content).toContain('entity-type: "project"');
-            expect(content).toContain('  - project');
-            expect(content).toContain('created: "2026-03-22"');
-            expect(content).toContain('source-note: "[[Daily Note 2026-03-22]]"');
+            expect(content).toBe(
+                '---\n' +
+                'title: "Redesign the onboarding flow"\n' +
+                'entity-type: "project"\n' +
+                'tags:\n' +
+                '  - project\n' +
+                'created: "2026-03-22"\n' +
+                'source-note: "[[Daily Note 2026-03-22]]"\n' +
+                '---\n\n' +
+                'Redesign the onboarding flow\n',
+            );
         });
     });
 });

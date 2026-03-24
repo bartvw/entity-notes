@@ -76,7 +76,8 @@ describe('PatternMatcher + NoteCreator integration', () => {
             '  - project\n' +
             'created: "2026-03-22"\n' +
             'source-note: "[[Daily Note 2026-03-22]]"\n' +
-            '---\n',
+            '---\n\n' +
+            'Redesign the onboarding flow\n',
         );
     });
 

@@ -97,7 +97,8 @@ Example — two buttons, one per tag:
 ## Note creation
 
 ### Filename
-- Derived from the line text after stripping the trigger tag and trimming whitespace
+- Derived from the source text (the wikilink text for a wikilink conversion; the full line minus the trigger tag for a line conversion), after trimming whitespace
+- Wikilinks are unwrapped: `[[Alice]]` becomes `Alice` in the filename (brackets stripped, inner text preserved)
 - Sanitized: remove characters not allowed in Obsidian filenames (`* " \ / < > : | ?`)
 - If a note with that filename already exists in the target folder, append a number: `Title 2`, `Title 3`, etc.
 
@@ -110,28 +111,32 @@ Every created note gets YAML frontmatter. All five standard fields are optional 
 
 ```yaml
 ---
-title: "<derived from line text>"          # name configurable; omitted when disabled
-entity-type: "<EntityType.id>"             # name configurable; omitted when disabled
-tags:                                      # name configurable; omitted when disabled
+title: "<derived title>"                         # name configurable; omitted when disabled
+entity-type: "<EntityType.id>"                   # name configurable; omitted when disabled
+tags:                                            # name configurable; omitted when disabled
   - "<EntityType.id>"
-created: "<YYYY-MM-DD>"                    # name configurable; omitted when disabled
-source-note: "[[OriginalNoteName]]"        # name configurable; omitted when disabled
+created: "<YYYY-MM-DD>"                          # name configurable; omitted when disabled
+source-note: "[[OriginalNoteName]]"              # name configurable; omitted when disabled
 <...fields from EntityType.frontmatterTemplate...>
 ---
 ```
+
+The **title field** value depends on the conversion type:
+- **Wikilink conversion**: the bare wikilink text, without brackets (identical to the filename). For `[[Project Alpha]] #project` this is `Project Alpha`.
+- **Line conversion**: the line text (minus the trigger tag, leading whitespace, and list/task markers), with any embedded wikilinks preserved in full. For `- Talked to [[Alice]] #person` this is `Talked to [[Alice]]`, while the filename strips the brackets to `Talked to Alice`.
 
 The `tags` list is seeded with the entity type id. If `frontmatterTemplate` includes additional tags, they are merged into the list rather than replacing it. If a template field's key matches the configured name of any standard field, the standard field wins.
 
 > **Note:** When **Identify entities by** is set to "Entity-type property" (the default), the entity-type field must be present in the created note's frontmatter for pills to appear. Disabling this field in that mode will prevent pills from appearing for all newly created entity notes. When using "Tag" mode, the entity-type field is not needed for pill detection.
 
 ### Note body
-Empty after the frontmatter block. The user fills it in.
+- **Wikilink conversion**: the note body is empty. The wikilink itself becomes the note's filename and title, so repeating it in the body adds no value.
+- **Line conversion**: the note body contains the line text with the trigger tag, leading whitespace, and list/task markers stripped — the same content as the title field. Wikilinks are preserved in full.
 
 ### Behavior after creation
 - The note is created silently. It is not opened or focused.
-- The entire source line is replaced with just the wikilink: `[[NoteFilename]]`
-- If the line was a list item (e.g. `- `), the list marker is preserved: `- [[NoteFilename]]`
-- Leading whitespace (indentation) is preserved: `  - [[NoteFilename]]` for an indented bullet
+- **Wikilink conversion**: only the trigger tag (and any whitespace before it) is removed; the wikilink remains and now resolves to the new note.
+- **Line conversion**: the entire source line is replaced with just the wikilink: `[[NoteFilename]]`; if the line was a list item, the list marker is preserved: `- [[NoteFilename]]`; leading whitespace (indentation) is preserved.
 
 ---
 
@@ -195,6 +200,8 @@ tags:
 created: "2026-03-22"
 source-note: "[[Daily Note 2026-03-22]]"
 ---
+
+Redesign the onboarding flow
 ```
 
 ---
@@ -207,7 +214,7 @@ When the **Convert on Enter** setting is enabled, pressing Enter at the end of a
 
 - The conversion fires when the user presses Enter and the cursor is at or after the last non-whitespace character on a matched line.
 - If the cursor is not at the end of the line (e.g. the user is editing mid-line), Enter behaves normally and no conversion occurs.
-- All matches on the line are converted in a single operation: if the line has multiple Case 1 matches (multiple unresolved wikilinks each followed by a tag), all their tags are stripped and all their notes are created before the line is updated. The result is identical to clicking each button individually.
+- All matches on the line are converted in a single operation: if the line has multiple unresolved wikilinks each followed by a tag, all their tags are stripped and all their notes are created before the line is updated. The result is identical to clicking each button individually.
 - After conversion fires, a newline is inserted and the cursor moves to the next line, as it would with a normal Enter press.
 - If the line no longer matches at the moment Enter is pressed (e.g. the trigger tag was just deleted), Enter behaves normally and inserts a newline.
 - The setting is global — it applies to all entity types.
@@ -230,7 +237,7 @@ Each of the five standard frontmatter fields has two configurable properties:
 
 | Field | Name (default) | Enabled (default) | Notes |
 |-------|---------------|-------------------|-------|
-| Title | `title` | On | The note title derived from the source line. |
+| Title | `title` | On | For a wikilink conversion: the bare link text (same as the filename). For a line conversion: the line text minus the trigger tag and list/task markers, with embedded wikilinks preserved in full; the filename additionally strips the wikilink brackets. |
 | Entity type | `entity-type` | On | **Required for entity pills to appear.** Disabling this field prevents pills from appearing for all newly created entity notes. |
 | Tags | `tags` | On | A tags list seeded with the entity type id. |
 | Created | `created` | On | The date the note was created (YYYY-MM-DD). |
@@ -270,9 +277,9 @@ Each entity type has:
 - **Source note has no title**: use the source file's basename
 - **Line is a list item** (e.g. `- Met Sarah #person`): strip the list marker from the derived title, so the note is named `Met Sarah` not `- Met Sarah`
 - **Indented list item** (e.g. `  - Met Sarah #person`): preserve the leading whitespace in the replaced line (`  - [[Met Sarah]]`); strip both the indentation and list marker from the derived title
-- **Unresolved link followed by tag** (e.g. `[[Sarah]] #person` where `Sarah.md` does not exist): Case 1 match — title is `Sarah`, only `#person` and the preceding whitespace are stripped from the line
-- **Multiple unresolved links on one line** (e.g. `[[Alice]] #person [[Project Alpha]] #project`): each unresolved wikilink+tag pair is an independent Case 1 match; a convert button appears after each tag; clicking one converts only that wikilink; pressing Enter (when Convert on Enter is enabled) converts all of them at once
-- **Resolved wikilink with tag and no other content** (e.g. `[[Alice]] #person` where `Alice.md` already exists): no match — the wikilink is resolved so Case 1 does not fire, and there is no meaningful plain-text content for Case 2
+- **Unresolved link followed by tag** (e.g. `[[Sarah]] #person` where `Sarah.md` does not exist): wikilink conversion — filename is `Sarah`, title field is `Sarah`, note body is empty, only `#person` and the preceding whitespace are stripped from the source line
+- **Multiple unresolved links on one line** (e.g. `[[Alice]] #person [[Project Alpha]] #project`): each unresolved wikilink+tag pair produces its own button; clicking one converts only that wikilink; pressing Enter (when Convert on Enter is enabled) converts all of them at once
+- **Resolved wikilink with tag and no other content** (e.g. `[[Alice]] #person` where `Alice.md` already exists): no match — the wikilink is resolved so wikilink conversion does not apply, and there is no meaningful plain-text content for line conversion
 - **Trigger tag mid-line** (e.g. `#person Sarah attended the meeting`): still matches; title derived from full line text minus the tag
 - **Multiple spaces around tag**: normalize to single space when building the modified line
 - **The source note is untitled / new unsaved note**: use `Untitled` as the `source-note` value
