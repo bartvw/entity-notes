@@ -6,7 +6,7 @@ This document defines the expected behavior of the entity-notes plugin. It is th
 
 ## Overview
 
-The plugin monitors the active editor for lines containing a configured trigger tag (e.g. `#idea`, `#project`). When a matching line is found that has not yet been converted, an inline button appears at the end of the line. Clicking the button creates a dedicated Markdown note for that entity, and replaces the entire source line with a wikilink to the new note followed by a styled entity pill. The pill is rendered as a CM6 decoration — it is not written to the file.
+The plugin monitors the active editor for lines containing a configured trigger tag (e.g. `#idea`, `#project`). When a matching line is found that has not yet been converted, an inline button appears immediately after the trigger tag. A line can have multiple buttons when it contains multiple unresolved wikilinks each followed by a trigger tag. Clicking a button creates a dedicated Markdown note for that entity, and replaces the relevant portion of the source line with a wikilink to the new note followed by a styled entity pill. The pill is rendered as a CM6 decoration — it is not written to the file.
 
 ---
 
@@ -32,19 +32,60 @@ A line is considered a match when ALL of the following are true:
 - It contains a trigger tag belonging to a configured and enabled entity type
 - It is not inside a code block or frontmatter block
 
+The trigger tag can appear in two forms, each with different conversion behavior:
+
+#### Case 1: tag after an unresolved wikilink
+The tag appears directly after an unresolved wikilink — a `[[wikilink]]` that does not yet resolve to an existing note in the vault. The tag must be the first non-whitespace token after the closing `]]`; any amount of whitespace between `]]` and the tag is allowed.
+
+- The entity note title is derived from the wikilink text.
+- After conversion, only the tag (and the whitespace between `]]` and the tag) is removed. The wikilink remains in place and now resolves to the newly created note.
+- Any other content on the line is left unchanged.
+
+Example:
+```
+- [[Project Alpha]] #project
+```
+After conversion:
+```
+- [[Project Alpha]]
+```
+
+#### Case 2: tag on a line without a preceding unresolved wikilink
+The tag appears anywhere on a line that does not have an unresolved wikilink directly before it.
+
+- The entity note title is derived from the full line text minus the trigger tag.
+- After conversion, the entire line is replaced with the wikilink to the new note.
+
+Example:
+```
+Project Alpha #project
+```
+After conversion:
+```
+[[Project Alpha]]
+```
+
 ### When a line does not match
 - The trigger tag belongs to a disabled entity type
 - The line is inside a fenced code block (``` ``` ```) or YAML frontmatter (`---`)
 - The line contains only the trigger tag and nothing else (no meaningful content to use as a title)
 
-### Multiple tags on one line
-If a line contains multiple trigger tags from different entity types, match only the first one found (left to right). Do not show multiple buttons.
+### Multiple matches on one line
+
+**Case 1 (multiple possible):** a line can produce more than one convert button. Each unresolved wikilink that is directly followed by a trigger tag produces its own button, placed immediately after that tag. The buttons are independent — clicking any one of them converts only the wikilink it belongs to.
+
+Example — two buttons, one per tag:
+```
+[[Alice]] #person [[Project Alpha]] #project
+```
+
+**Case 2 (at most one):** when no Case 1 matches exist on the line, at most one full-line button is shown. If multiple trigger tags appear, the leftmost one wins.
 
 ---
 
 ## The inline button
 
-- Rendered as a small button at the end of the matching line in the editor
+- Rendered as a small button immediately after the matching trigger tag in the editor
 - Label: `→ <EntityType.name>` (e.g. `→ Person`, `→ Idea`)
 - Only visible in Live Preview and Source mode, not in Reading mode
 - Disappears immediately after conversion (the line now contains a wikilink)
@@ -160,12 +201,13 @@ source-note: "[[Daily Note 2026-03-22]]"
 
 ## Convert on Enter
 
-When the **Convert on Enter** setting is enabled, pressing Enter at the end of a matched line triggers the same conversion as clicking the button. The inline button remains visible on unconverted lines and continues to work as normal — both methods are available simultaneously.
+When the **Convert on Enter** setting is enabled, pressing Enter at the end of a matched line converts all matches on that line at once. The inline buttons remain visible on unconverted lines and continue to work as normal — both methods are available simultaneously.
 
 ### Behavior
 
 - The conversion fires when the user presses Enter and the cursor is at or after the last non-whitespace character on a matched line.
 - If the cursor is not at the end of the line (e.g. the user is editing mid-line), Enter behaves normally and no conversion occurs.
+- All matches on the line are converted in a single operation: if the line has multiple Case 1 matches (multiple unresolved wikilinks each followed by a tag), all their tags are stripped and all their notes are created before the line is updated. The result is identical to clicking each button individually.
 - After conversion fires, a newline is inserted and the cursor moves to the next line, as it would with a normal Enter press.
 - If the line no longer matches at the moment Enter is pressed (e.g. the trigger tag was just deleted), Enter behaves normally and inserts a newline.
 - The setting is global — it applies to all entity types.
@@ -228,6 +270,9 @@ Each entity type has:
 - **Source note has no title**: use the source file's basename
 - **Line is a list item** (e.g. `- Met Sarah #person`): strip the list marker from the derived title, so the note is named `Met Sarah` not `- Met Sarah`
 - **Indented list item** (e.g. `  - Met Sarah #person`): preserve the leading whitespace in the replaced line (`  - [[Met Sarah]]`); strip both the indentation and list marker from the derived title
+- **Unresolved link followed by tag** (e.g. `[[Sarah]] #person` where `Sarah.md` does not exist): Case 1 match — title is `Sarah`, only `#person` and the preceding whitespace are stripped from the line
+- **Multiple unresolved links on one line** (e.g. `[[Alice]] #person [[Project Alpha]] #project`): each unresolved wikilink+tag pair is an independent Case 1 match; a convert button appears after each tag; clicking one converts only that wikilink; pressing Enter (when Convert on Enter is enabled) converts all of them at once
+- **Resolved wikilink with tag and no other content** (e.g. `[[Alice]] #person` where `Alice.md` already exists): no match — the wikilink is resolved so Case 1 does not fire, and there is no meaningful plain-text content for Case 2
 - **Trigger tag mid-line** (e.g. `#person Sarah attended the meeting`): still matches; title derived from full line text minus the tag
 - **Multiple spaces around tag**: normalize to single space when building the modified line
 - **The source note is untitled / new unsaved note**: use `Untitled` as the `source-note` value

@@ -55,12 +55,12 @@ describe('PatternMatcher + NoteCreator integration', () => {
         const matcher = new PatternMatcher();
         const matched = matcher.match(line, DEFAULT_ENTITY_TYPES, NO_CONTEXT);
         expect(matched).not.toBeNull();
-        expect(matched!.id).toBe('project');
+        expect(matched!.entityType.id).toBe('project');
 
         // Step 2: NoteCreator creates the note and rewrites the line
         const { app, mockCreate } = makeMockApp();
         const result = await new NoteCreator(app).create(
-            line, matched!, 'Daily Note 2026-03-22.md', ALL_ON, FIXED_DATE,
+            line, matched!.entityType, 'Daily Note 2026-03-22.md', ALL_ON, FIXED_DATE,
         );
 
         expect(result.title).toBe('Redesign the onboarding flow');
@@ -110,11 +110,11 @@ describe('PatternMatcher + NoteCreator integration', () => {
         const matcher = new PatternMatcher();
         const matched = matcher.match(line, DEFAULT_ENTITY_TYPES, NO_CONTEXT);
         expect(matched).not.toBeNull();
-        expect(matched!.id).toBe('person');
+        expect(matched!.entityType.id).toBe('person');
 
         const { app, mockCreate } = makeMockApp();
         const result = await new NoteCreator(app).create(
-            line, matched!, 'Daily Note 2026-03-22.md', ALL_ON, FIXED_DATE,
+            line, matched!.entityType, 'Daily Note 2026-03-22.md', ALL_ON, FIXED_DATE,
         );
 
         expect(result.title).toBe('Met Sarah');

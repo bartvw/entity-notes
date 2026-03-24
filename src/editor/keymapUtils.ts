@@ -1,5 +1,6 @@
 import { PatternMatcher } from '../services/PatternMatcher';
-import type { EntityType, PluginSettings } from '../types';
+import type { PositionedMatch } from '../services/PatternMatcher';
+import type { PluginSettings } from '../types';
 
 /**
  * Returns true when the cursor is at or after the last non-whitespace
@@ -25,18 +26,19 @@ interface StateShape {
 }
 
 export interface EnterMatch {
-    entityType: EntityType;
+    matches: PositionedMatch[];
     lineNumber: number;
 }
 
 /**
  * Checks whether the cursor is at the end of a matched entity line.
- * Returns the matched entity type and line number, or null if Enter should
+ * Returns all positioned matches and the line number, or null if Enter should
  * behave normally (no conversion). Extracted for unit testing without CM6/obsidian.
  */
 export function findMatchForEnter(
     state: StateShape,
     settings: PluginSettings,
+    isLinkResolved?: (linkText: string) => boolean,
 ): EnterMatch | null {
     const cursor = state.selection.main.head;
     const line = state.doc.lineAt(cursor);
@@ -49,8 +51,8 @@ export function findMatchForEnter(
     }
 
     const context = PatternMatcher.computeContext(docLines, line.number - 1);
-    const entityType = new PatternMatcher().match(line.text, settings.entityTypes, context);
+    const results = new PatternMatcher().matchAll(line.text, settings.entityTypes, context, isLinkResolved);
 
-    if (entityType === null) return null;
-    return { entityType, lineNumber: line.number };
+    if (results.length === 0) return null;
+    return { matches: results, lineNumber: line.number };
 }

@@ -4,7 +4,7 @@ import type { Extension } from '@codemirror/state';
 import { Notice } from 'obsidian';
 import type EntityNotesPlugin from '../main';
 import { PatternMatcher } from '../services/PatternMatcher';
-import { EntityWidget, convertLine } from './EntityWidget';
+import { EntityWidget, convertAllOnLine } from './EntityWidget';
 import { EntityPillWidget } from './EntityPillWidget';
 import { findMatchForEnter } from './keymapUtils';
 import { resolveEntitiesFromFrontmatter } from '../services/resolveEntity';
@@ -47,10 +47,12 @@ export function buildEntityButtonPlugin(plugin: EntityNotesPlugin): Extension {
             if (!plugin.settings.convertOnEnter) return false;
             if (!view.state.selection.main.empty) return false;
 
-            const match = findMatchForEnter(view.state, plugin.settings);
+            const isLinkResolved = (linkText: string): boolean =>
+                plugin.app.metadataCache.getFirstLinkpathDest(linkText, '') !== null;
+            const match = findMatchForEnter(view.state, plugin.settings, isLinkResolved);
             if (match === null) return false;
 
-            convertLine(plugin, match.entityType, match.lineNumber, view).catch((err: unknown) => {
+            convertAllOnLine(plugin, match.matches, match.lineNumber, view).catch((err: unknown) => {
                 console.error('[entity-notes] Failed to create note:', err);
                 new Notice('Entity notes: could not create note — see console');
             });
@@ -83,21 +85,27 @@ function buildDecorations(
             const line = view.state.doc.lineAt(pos);
 
             const context = PatternMatcher.computeContext(docLines, line.number - 1);
-            const match = matcher.match(line.text, entityTypes, context);
+            const isLinkResolved = (linkText: string): boolean =>
+                plugin.app.metadataCache.getFirstLinkpathDest(linkText, '') !== null;
+            const matches = matcher.matchAll(line.text, entityTypes, context, isLinkResolved);
 
-            if (match !== null) {
-                builder.add(
-                    line.to,
-                    line.to,
-                    Decoration.widget({
-                        widget: new EntityWidget(plugin, match, line.text, line.number),
-                        side: 1,
-                    }),
-                );
+            if (matches.length > 0) {
+                for (const { matchResult, tagEnd } of matches) {
+                    const widgetPos = line.from + tagEnd;
+                    builder.add(
+                        widgetPos,
+                        widgetPos,
+                        Decoration.widget({
+                            widget: new EntityWidget(plugin, matchResult, line.text, line.number),
+                            side: 1,
+                        }),
+                    );
+                }
             } else {
-                // Pill detection: find a [[wikilink]] and check its frontmatter
-                const linkMatch = line.text.match(/\[\[([^\]|#^]+?)(?:\|[^\]]+)?\]\]/);
-                if (linkMatch) {
+                // Pill detection: find all [[wikilinks]] on the line and inject a pill after each entity link
+                const pillRe = /\[\[([^\]|#^]+?)(?:\|[^\]]+)?\]\]/g;
+                let linkMatch: RegExpExecArray | null;
+                while ((linkMatch = pillRe.exec(line.text)) !== null) {
                     const linkText = linkMatch[1]!.trim();
                     const file = plugin.app.metadataCache.getFirstLinkpathDest(linkText, '');
                     if (file) {

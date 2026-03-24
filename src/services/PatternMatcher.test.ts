@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PatternMatcher, type MatchContext } from './PatternMatcher';
+import { PatternMatcher, type MatchContext, type MatchResult } from './PatternMatcher';
 import type { EntityType } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -24,55 +24,81 @@ const CLEAR: MatchContext = { inFencedBlock: false, inFrontmatter: false };
 const IN_CODE: MatchContext = { inFencedBlock: true, inFrontmatter: false };
 const IN_FM: MatchContext = { inFrontmatter: true, inFencedBlock: false };
 
+/** Shorthand: full-line result for an entity type. */
+const fullLine = (entityType: EntityType): MatchResult =>
+    ({ case: 'full-line', entityType });
+
+/** Shorthand: unresolved-link result for an entity type and link text. */
+const unresolvedLink = (entityType: EntityType, linkText: string): MatchResult =>
+    ({ case: 'unresolved-link', entityType, linkText });
+
+/** Always reports the link as unresolved (nothing exists in the vault). */
+const noneResolved = () => false;
+
+/** Always reports the link as resolved (everything exists in the vault). */
+const allResolved = () => true;
+
 // ---------------------------------------------------------------------------
-// PatternMatcher.match
+// PatternMatcher.match — Case 2 (full-line)
 // ---------------------------------------------------------------------------
 
-describe('PatternMatcher.match', () => {
+describe('PatternMatcher.match — Case 2 (full-line)', () => {
     const pm = new PatternMatcher();
 
     // --- hits ---
 
     describe('matches', () => {
         it('tag at end of line', () => {
-            expect(pm.match('Sarah attended the meeting #person', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('Sarah attended the meeting #person', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('tag at start of line', () => {
-            expect(pm.match('#person Sarah', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('#person Sarah', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('tag mid-line', () => {
-            expect(pm.match('#person attended the meeting', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('#person attended the meeting', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('tag on a list item with content', () => {
-            expect(pm.match('- Met Sarah #person', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('- Met Sarah #person', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('tag on a task item with content', () => {
-            expect(pm.match('- [ ] Reach out to #person', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('- [ ] Reach out to #person', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('tag on a completed task item with content', () => {
-            expect(pm.match('- [x] Spoke to #person', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('- [x] Spoke to #person', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('tag on an ordered list item with content', () => {
-            expect(pm.match('1. Contact #person', [PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('1. Contact #person', [PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('returns leftmost tag when person appears before idea', () => {
-            expect(pm.match('#person brainstormed an #idea', [PERSON, IDEA], CLEAR)).toBe(PERSON);
+            expect(pm.match('#person brainstormed an #idea', [PERSON, IDEA], CLEAR)).toEqual(fullLine(PERSON));
         });
 
         it('returns leftmost tag when idea appears before person', () => {
-            expect(pm.match('new #idea for #person', [PERSON, IDEA], CLEAR)).toBe(IDEA);
+            expect(pm.match('new #idea for #person', [PERSON, IDEA], CLEAR)).toEqual(fullLine(IDEA));
         });
 
         it('entity type order in the array does not override line position', () => {
             // IDEA is listed first but #person appears first in the line
-            expect(pm.match('#person with a new #idea', [IDEA, PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('#person with a new #idea', [IDEA, PERSON], CLEAR)).toEqual(fullLine(PERSON));
+        });
+
+        it('resolved wikilink followed by tag returns null — no meaningful plain-text content', () => {
+            expect(pm.match('[[Sarah]] #person', [PERSON], CLEAR, allResolved)).toBeNull();
+        });
+
+        it('returns null when isLinkResolved is omitted — wikilink-only line has no title', () => {
+            expect(pm.match('[[Sarah]] #person', [PERSON], CLEAR)).toBeNull();
+        });
+
+        it('line with plain text plus an embedded wikilink matches as full-line', () => {
+            expect(pm.match('Met [[Sarah]] #person', [PERSON], CLEAR, allResolved)).toEqual(fullLine(PERSON));
         });
     });
 
@@ -84,7 +110,7 @@ describe('PatternMatcher.match', () => {
         });
 
         it('skips disabled, matches enabled', () => {
-            expect(pm.match('test #disabled and #person notes', [DISABLED, PERSON], CLEAR)).toBe(PERSON);
+            expect(pm.match('test #disabled and #person notes', [DISABLED, PERSON], CLEAR)).toEqual(fullLine(PERSON));
         });
     });
 
@@ -165,6 +191,122 @@ describe('PatternMatcher.match', () => {
 
         it('returns null for an empty line', () => {
             expect(pm.match('', [PERSON], CLEAR)).toBeNull();
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// PatternMatcher.match — Case 1 (unresolved-link)
+// ---------------------------------------------------------------------------
+
+describe('PatternMatcher.match — Case 1 (unresolved-link)', () => {
+    const pm = new PatternMatcher();
+
+    describe('matches', () => {
+        it('bare wikilink followed by tag', () => {
+            expect(pm.match('[[Sarah]] #person', [PERSON], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Sarah'));
+        });
+
+        it('wikilink with multi-word link text', () => {
+            expect(pm.match('[[Project Alpha]] #idea', [IDEA], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(IDEA, 'Project Alpha'));
+        });
+
+        it('wikilink on a list item', () => {
+            expect(pm.match('- [[Sarah]] #person', [PERSON], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Sarah'));
+        });
+
+        it('wikilink on an indented list item', () => {
+            expect(pm.match('  - [[Sarah]] #person', [PERSON], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Sarah'));
+        });
+
+        it('wikilink preceded by other text on the line', () => {
+            // Spec: other content before/after is left unchanged; Case 1 still applies
+            expect(pm.match('Build [[Project Alpha]] #project', [IDEA, PERSON, { ...PERSON, id: 'project', triggerTag: '#project' } as EntityType], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(expect.objectContaining({ id: 'project' }) as EntityType, 'Project Alpha'));
+        });
+
+        it('multiple spaces between ]] and tag', () => {
+            expect(pm.match('[[Sarah]]   #person', [PERSON], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Sarah'));
+        });
+
+        it('leftmost tag wins when multiple tags are present and first is directly after wikilink', () => {
+            expect(pm.match('[[Note]] #person other #idea', [PERSON, IDEA], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Note'));
+        });
+
+        it('tag after second wikilink when first wikilink has no tag', () => {
+            expect(pm.match('[[Alice]] [[Bob]] #person', [PERSON], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Bob'));
+        });
+
+        it('two wikilink+tag pairs — leftmost tag wins, identifies correct wikilink', () => {
+            expect(pm.match('[[Alice]] #person [[Bob]] #idea', [PERSON, IDEA], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(PERSON, 'Alice'));
+        });
+
+        it('resolved first wikilink + unresolved second wikilink + tag', () => {
+            const resolver = (text: string) => text === 'Alice'; // Alice exists, Bob does not
+            expect(pm.match('[[Alice]] [[Bob]] #person', [PERSON], CLEAR, resolver))
+                .toEqual(unresolvedLink(PERSON, 'Bob'));
+        });
+
+        it('resolved wikilink+tag followed by unresolved wikilink+same tag', () => {
+            // [[Alice]] #person is resolved → should not break; [[Bob]] #person is unresolved → Case 1
+            const resolver = (text: string) => text === 'Alice';
+            expect(pm.match('[[Alice]] #person [[Bob]] #person', [PERSON], CLEAR, resolver))
+                .toEqual(unresolvedLink(PERSON, 'Bob'));
+        });
+
+        it('both wikilinks resolved + tag returns null — no plain-text content', () => {
+            expect(pm.match('[[Alice]] [[Bob]] #person', [PERSON], CLEAR, allResolved))
+                .toBeNull();
+        });
+    });
+
+    describe('no-match', () => {
+        it('returns null when link is resolved — no plain-text title available', () => {
+            expect(pm.match('[[Sarah]] #person', [PERSON], CLEAR, allResolved)).toBeNull();
+        });
+
+        it('returns null for disabled entity type', () => {
+            expect(pm.match('[[Sarah]] #disabled', [DISABLED], CLEAR, noneResolved)).toBeNull();
+        });
+
+        it('returns null inside a fenced code block', () => {
+            expect(pm.match('[[Sarah]] #person', [PERSON], IN_CODE, noneResolved)).toBeNull();
+        });
+
+        it('returns null inside YAML frontmatter', () => {
+            expect(pm.match('[[Sarah]] #person', [PERSON], IN_FM, noneResolved)).toBeNull();
+        });
+
+        it('tag directly adjacent to ]] without space is not a valid tag boundary', () => {
+            // #person must be preceded by whitespace per tag regex — no match at all
+            expect(pm.match('[[Sarah]]#person', [PERSON], CLEAR, noneResolved)).toBeNull();
+        });
+
+        it('tag follows wikilink but is not the first token after ]]', () => {
+            // "extra" text separates ]] from #person — falls through to Case 2 full-line match
+            expect(pm.match('[[Sarah]] extra #person', [PERSON], CLEAR, noneResolved))
+                .toEqual(fullLine(PERSON));
+        });
+    });
+
+    describe('link text extraction', () => {
+        it('extracts plain link text', () => {
+            const result = pm.match('[[My Note]] #idea', [IDEA], CLEAR, noneResolved) as MatchResult & { case: 'unresolved-link' };
+            expect(result.linkText).toBe('My Note');
+        });
+
+        it('extracts the target from an aliased link (part before |)', () => {
+            // [[Target|Alias]] — vault lookup and note title use "Target"
+            const result = pm.match('[[Target|Alias]] #person', [PERSON], CLEAR, noneResolved) as MatchResult & { case: 'unresolved-link' };
+            expect(result.linkText).toBe('Target');
         });
     });
 });
@@ -340,7 +482,7 @@ describe('PatternMatcher.computeContext', () => {
         it('matches after a fenced code block', () => {
             const doc = ['```', 'example #person', '```', 'real #person note'];
             const ctx = PatternMatcher.computeContext(doc, 3);
-            expect(pm.match(doc[3] ?? '', [PERSON], ctx)).toBe(PERSON);
+            expect(pm.match(doc[3] ?? '', [PERSON], ctx)).toEqual(fullLine(PERSON));
         });
 
         it('does not match inside YAML frontmatter', () => {
@@ -352,7 +494,102 @@ describe('PatternMatcher.computeContext', () => {
         it('matches content after YAML frontmatter', () => {
             const doc = ['---', 'tags: [person]', '---', 'real #person note'];
             const ctx = PatternMatcher.computeContext(doc, 3);
-            expect(pm.match(doc[3] ?? '', [PERSON], ctx)).toBe(PERSON);
+            expect(pm.match(doc[3] ?? '', [PERSON], ctx)).toEqual(fullLine(PERSON));
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// PatternMatcher.matchAll
+// ---------------------------------------------------------------------------
+
+describe('PatternMatcher.matchAll', () => {
+    const pm = new PatternMatcher();
+
+    it('returns [] inside a fenced code block', () => {
+        expect(pm.matchAll('Hello #person', [PERSON], IN_CODE)).toEqual([]);
+    });
+
+    it('returns [] inside frontmatter', () => {
+        expect(pm.matchAll('title: #person', [PERSON], IN_FM)).toEqual([]);
+    });
+
+    it('returns [] when no entity types are enabled', () => {
+        expect(pm.matchAll('Hello #disabled', [DISABLED], CLEAR)).toEqual([]);
+    });
+
+    it('returns [] when line has no trigger tag', () => {
+        expect(pm.matchAll('Just a regular line', [PERSON], CLEAR)).toEqual([]);
+    });
+
+    // Case 2 ----------------------------------------------------------------
+
+    it('returns one full-line entry for a plain matched line', () => {
+        const results = pm.matchAll('Meet Alice #person', [PERSON], CLEAR);
+        expect(results).toHaveLength(1);
+        expect(results[0]!.matchResult).toEqual(fullLine(PERSON));
+    });
+
+    it('tagEnd points just after the trigger tag for Case 2', () => {
+        const line = 'Meet Alice #person';
+        const results = pm.matchAll(line, [PERSON], CLEAR);
+        expect(results[0]!.tagEnd).toBe(line.indexOf('#person') + '#person'.length);
+    });
+
+    it('returns [] for Case 2 when line has no meaningful content', () => {
+        expect(pm.matchAll('#person', [PERSON], CLEAR)).toEqual([]);
+    });
+
+    // Case 1 — single -------------------------------------------------------
+
+    it('returns one unresolved-link entry for a single unresolved wikilink', () => {
+        const results = pm.matchAll('[[Alice]] #person', [PERSON], CLEAR, noneResolved);
+        expect(results).toHaveLength(1);
+        expect(results[0]!.matchResult).toEqual(unresolvedLink(PERSON, 'Alice'));
+    });
+
+    it('tagEnd points just after the trigger tag for Case 1', () => {
+        const line = '[[Alice]] #person';
+        const results = pm.matchAll(line, [PERSON], CLEAR, noneResolved);
+        expect(results[0]!.tagEnd).toBe(line.indexOf('#person') + '#person'.length);
+    });
+
+    it('returns [] for a resolved wikilink with tag and no other content', () => {
+        expect(pm.matchAll('[[Alice]] #person', [PERSON], CLEAR, allResolved)).toEqual([]);
+    });
+
+    // Case 1 — multiple wikilinks on same line -------------------------------
+
+    it('returns two entries for two unresolved wikilinks with tags', () => {
+        const line = '[[Alice]] #person [[Bob]] #person';
+        const results = pm.matchAll(line, [PERSON], CLEAR, noneResolved);
+        expect(results).toHaveLength(2);
+        expect(results[0]!.matchResult).toEqual(unresolvedLink(PERSON, 'Alice'));
+        expect(results[1]!.matchResult).toEqual(unresolvedLink(PERSON, 'Bob'));
+    });
+
+    it('returns two entries for two wikilinks with different entity types', () => {
+        const line = '[[Alice]] #person [[My Idea]] #idea';
+        const results = pm.matchAll(line, [PERSON, IDEA], CLEAR, noneResolved);
+        expect(results).toHaveLength(2);
+        expect(results[0]!.matchResult).toEqual(unresolvedLink(PERSON, 'Alice'));
+        expect(results[1]!.matchResult).toEqual(unresolvedLink(IDEA, 'My Idea'));
+    });
+
+    it('skips resolved wikilinks and only returns entries for unresolved ones', () => {
+        const line = '[[Alice]] #person [[Bob]] #person';
+        const resolver = (text: string) => text === 'Alice'; // Alice resolved, Bob not
+        const results = pm.matchAll(line, [PERSON], CLEAR, resolver);
+        expect(results).toHaveLength(1);
+        expect(results[0]!.matchResult).toEqual(unresolvedLink(PERSON, 'Bob'));
+    });
+
+    it('tagEnds are correct for two Case 1 matches', () => {
+        const line = '[[Alice]] #person [[Bob]] #person';
+        const results = pm.matchAll(line, [PERSON], CLEAR, noneResolved);
+        // first tag ends after the first '#person'
+        expect(results[0]!.tagEnd).toBe(line.indexOf('#person') + '#person'.length);
+        // second tag ends after the second '#person'
+        expect(results[1]!.tagEnd).toBe(line.lastIndexOf('#person') + '#person'.length);
     });
 });

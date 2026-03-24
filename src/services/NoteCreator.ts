@@ -23,6 +23,9 @@ export class NoteCreator {
      * @param entityType    The matched entity type.
      * @param sourceNotePath Path of the note that contains the line (may be '' for unsaved notes).
      * @param date          ISO date string (YYYY-MM-DD). Defaults to today; injectable for tests.
+     * @param linkText      Case 1 only: the wikilink text to use as the note title. When provided,
+     *                      the title is derived from this value instead of the full line, and the
+     *                      modified line strips only the trigger tag rather than replacing the whole line.
      */
     async create(
         lineText: string,
@@ -30,8 +33,11 @@ export class NoteCreator {
         sourceNotePath: string,
         options: FrontmatterOptions,
         date = NoteCreator.today(),
+        linkText?: string,
     ): Promise<NoteCreatorResult> {
-        const rawTitle = NoteCreator.deriveTitle(lineText, entityType.triggerTag);
+        const rawTitle = linkText !== undefined
+            ? NoteCreator.sanitizeFilename(linkText)
+            : NoteCreator.deriveTitle(lineText, entityType.triggerTag);
         const sourceNoteName = NoteCreator.resolveSourceNoteName(sourceNotePath);
 
         const targetFolder = normalizePath(entityType.targetFolder);
@@ -40,7 +46,9 @@ export class NoteCreator {
         const { filePath, title } = this.resolveFilePath(targetFolder, rawTitle);
         const content = NoteCreator.buildContent(title, entityType, sourceNoteName, date, options);
         const file = await this.app.vault.create(filePath, content);
-        const modifiedLine = NoteCreator.buildModifiedLine(lineText, entityType.triggerTag, title);
+        const modifiedLine = linkText !== undefined
+            ? NoteCreator.buildModifiedLineCase1(lineText, entityType.triggerTag)
+            : NoteCreator.buildModifiedLine(lineText, entityType.triggerTag, title);
 
         return { file, title, modifiedLine };
     }
@@ -58,6 +66,10 @@ export class NoteCreator {
         const re = NoteCreator.tagRegex(triggerTag);
         let s = lineText.replace(re, ' ').trim();
 
+        // Strip wikilinks — they must not appear in the derived title because the
+        // modified line wraps the title in [[ ]], which would produce [[[[...]]]]
+        s = s.replace(/\[\[[^\]]*\]\]/g, ' ').trim();
+
         // Strip leading list / task markers (same order as PatternMatcher)
         s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
         s = s.replace(/^[-*+]\s*/, '').trim();     // "- " / "* " / "+ "
@@ -73,6 +85,16 @@ export class NoteCreator {
      */
     static sanitizeFilename(title: string): string {
         return title.replace(/[*"\\/<>:|?]/g, '').trim();
+    }
+
+    /**
+     * Case 1 line rewrite: strips the trigger tag (and the whitespace immediately
+     * before it) from the line, leaving the wikilink and all other content intact.
+     */
+    static buildModifiedLineCase1(lineText: string, triggerTag: string): string {
+        const escaped = triggerTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`\\s*${escaped}(?![a-zA-Z0-9_\\-\\/])`);
+        return lineText.replace(re, '').trimEnd();
     }
 
     /**

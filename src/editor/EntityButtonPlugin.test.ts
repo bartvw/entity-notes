@@ -114,7 +114,7 @@ describe('findMatchForEnter', () => {
         const state = makeState(text, text.length);
         const result = findMatchForEnter(state, PROJECT_SETTINGS);
         expect(result).not.toBeNull();
-        expect(result!.entityType.id).toBe('project');
+        expect(result!.matches[0]!.matchResult.entityType.id).toBe('project');
         expect(result!.lineNumber).toBe(1);
     });
 
@@ -123,5 +123,30 @@ describe('findMatchForEnter', () => {
         const text = lines[1]!;
         const state = makeState(text, text.length, lines);
         expect(findMatchForEnter(state, PROJECT_SETTINGS)).toBeNull();
+    });
+
+    it('returns unresolved-link case when isLinkResolved returns false', () => {
+        const text = '[[New Project]] #project';
+        const state = makeState(text, text.length);
+        const result = findMatchForEnter(state, PROJECT_SETTINGS, () => false);
+        expect(result).not.toBeNull();
+        expect(result!.matches[0]!.matchResult.case).toBe('unresolved-link');
+        expect((result!.matches[0]!.matchResult as { case: 'unresolved-link'; linkText: string }).linkText).toBe('New Project');
+    });
+
+    it('returns full-line case when isLinkResolved returns true (link resolves)', () => {
+        const text = '[[Existing Project]] #project extra text';
+        const state = makeState(text, text.length);
+        const result = findMatchForEnter(state, PROJECT_SETTINGS, () => true);
+        expect(result).not.toBeNull();
+        expect(result!.matches[0]!.matchResult.case).toBe('full-line');
+    });
+
+    it('returns null when line is only a resolved wikilink with tag and no other content', () => {
+        const text = '[[Existing Project]] #project';
+        const state = makeState(text, text.length);
+        // Resolved link + tag with no other meaningful content → null
+        const result = findMatchForEnter(state, PROJECT_SETTINGS, () => true);
+        expect(result).toBeNull();
     });
 });

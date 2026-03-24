@@ -79,6 +79,15 @@ describe('NoteCreator.deriveTitle', () => {
         expect(NoteCreator.deriveTitle('#personality trait', '#person')).toBe('#personality trait');
     });
 
+    it('strips a wikilink from the title', () => {
+        expect(NoteCreator.deriveTitle('Met [[Alice]] #person', '#person')).toBe('Met');
+    });
+
+    it('strips multiple wikilinks from the title', () => {
+        expect(NoteCreator.deriveTitle('Discussion with [[Alice]] and [[Bob]] #person', '#person'))
+            .toBe('Discussion with and');
+    });
+
     it('applies filename sanitization', () => {
         expect(NoteCreator.deriveTitle('Meeting: Q1 "plan" #person', '#person'))
             .toBe('Meeting Q1 plan');
@@ -163,6 +172,52 @@ describe('NoteCreator.buildModifiedLine', () => {
     it('preserves deeper indentation on an indented list item', () => {
         expect(NoteCreator.buildModifiedLine('    - Met Sarah #person', '#person', 'Met Sarah'))
             .toBe('    - [[Met Sarah]]');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// NoteCreator.buildModifiedLineCase1
+// ---------------------------------------------------------------------------
+
+describe('NoteCreator.buildModifiedLineCase1', () => {
+    it('removes the tag and preceding whitespace', () => {
+        expect(NoteCreator.buildModifiedLineCase1('[[Sarah]] #person', '#person'))
+            .toBe('[[Sarah]]');
+    });
+
+    it('removes the tag from a list item', () => {
+        expect(NoteCreator.buildModifiedLineCase1('- [[Sarah]] #person', '#person'))
+            .toBe('- [[Sarah]]');
+    });
+
+    it('preserves leading indentation', () => {
+        expect(NoteCreator.buildModifiedLineCase1('  - [[Sarah]] #person', '#person'))
+            .toBe('  - [[Sarah]]');
+    });
+
+    it('removes the tag when other content precedes the wikilink', () => {
+        expect(NoteCreator.buildModifiedLineCase1('Build [[Project Alpha]] #project', '#project'))
+            .toBe('Build [[Project Alpha]]');
+    });
+
+    it('preserves content after the tag', () => {
+        expect(NoteCreator.buildModifiedLineCase1('[[Alice]] #person some notes', '#person'))
+            .toBe('[[Alice]] some notes');
+    });
+
+    it('handles multiple spaces before the tag', () => {
+        expect(NoteCreator.buildModifiedLineCase1('[[Sarah]]   #person', '#person'))
+            .toBe('[[Sarah]]');
+    });
+
+    it('removes only the first occurrence when tag appears twice', () => {
+        expect(NoteCreator.buildModifiedLineCase1('[[Sarah]] #person extra #person', '#person'))
+            .toBe('[[Sarah]] extra #person');
+    });
+
+    it('removes the tag when there is no whitespace between the wikilink and the tag', () => {
+        expect(NoteCreator.buildModifiedLineCase1('[[Sarah]]#person', '#person'))
+            .toBe('[[Sarah]]');
     });
 });
 
@@ -511,6 +566,39 @@ describe('NoteCreator.create', () => {
             );
             const result = await nc.create('Sarah #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE);
             expect(result.modifiedLine).toBe('[[Sarah 2]]');
+        });
+    });
+
+    describe('Case 1 — unresolved-link (linkText provided)', () => {
+        it('derives title from linkText, not the line', async () => {
+            const result = await nc.create('[[Sarah]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE, 'Sarah');
+            expect(result.title).toBe('Sarah');
+        });
+
+        it('modified line strips only the tag', async () => {
+            const result = await nc.create('[[Sarah]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE, 'Sarah');
+            expect(result.modifiedLine).toBe('[[Sarah]]');
+        });
+
+        it('preserves list marker in modified line', async () => {
+            const result = await nc.create('- [[Sarah]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE, 'Sarah');
+            expect(result.modifiedLine).toBe('- [[Sarah]]');
+        });
+
+        it('creates note at the correct path using linkText as filename', async () => {
+            await nc.create('[[Project Alpha]] #project', PROJECT, 'Daily.md', ALL_ON, FIXED_DATE, 'Project Alpha');
+            expect(create).toHaveBeenCalledWith('Entities/Projects/Project Alpha.md', expect.any(String));
+        });
+
+        it('sanitizes the linkText for use as a filename', async () => {
+            await nc.create('[[Meeting: Q1]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE, 'Meeting: Q1');
+            expect(create).toHaveBeenCalledWith('Entities/People/Meeting Q1.md', expect.any(String));
+        });
+
+        it('writes the linkText as the title in frontmatter', async () => {
+            await nc.create('[[Sarah]] #person', PERSON, 'Daily.md', ALL_ON, FIXED_DATE, 'Sarah');
+            const content: string = create.mock.calls[0]?.[1] as string;
+            expect(content).toContain('title: "Sarah"');
         });
     });
 
