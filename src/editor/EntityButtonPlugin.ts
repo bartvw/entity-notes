@@ -111,7 +111,7 @@ function buildDecorations(
                     if (file) {
                         const cache = plugin.app.metadataCache.getFileCache(file);
                         const matches = resolveEntitiesFromFrontmatter(cache?.frontmatter, plugin.settings);
-                        const afterLink = line.from + linkMatch.index! + linkMatch[0].length;
+                        const afterLink = line.from + (linkMatch.index ?? 0) + linkMatch[0].length;
                         for (const et of matches) {
                             builder.add(
                                 afterLink,

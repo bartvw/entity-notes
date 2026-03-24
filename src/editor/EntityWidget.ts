@@ -112,7 +112,7 @@ export async function convertAllOnLine(
     const freshLine = view.state.doc.line(lineNumber);
     if (freshLine.text !== line.text) {
         new Notice(
-            `entity-notes: notes were created but the source line changed — please add the links manually.`,
+            `Entity notes: notes were created but the source line changed — please add the links manually.`,
         );
         return;
     }
