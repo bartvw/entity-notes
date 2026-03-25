@@ -41,9 +41,10 @@ export class NoteCreator {
         const sourceNoteName = NoteCreator.resolveSourceNoteName(sourceNotePath);
 
         const targetFolder = normalizePath(entityType.targetFolder);
-        await this.ensureFolder(targetFolder);
+        const isVaultRoot = targetFolder === '' || targetFolder === '/' || targetFolder === '.';
+        if (!isVaultRoot) await this.ensureFolder(targetFolder);
 
-        const { filePath, title } = this.resolveFilePath(targetFolder, rawTitle);
+        const { filePath, title } = this.resolveFilePath(isVaultRoot ? '' : targetFolder, rawTitle);
 
         // For wikilink conversion: title field = bare text (same as filename).
         // For line conversion: title field = line text with wikilinks preserved in full.
@@ -240,14 +241,15 @@ export class NoteCreator {
         targetFolder: string,
         title: string,
     ): { filePath: string; title: string } {
-        const base = `${targetFolder}/${title}`;
+        const prefix = targetFolder ? `${targetFolder}/` : '';
+        const base = `${prefix}${title}`;
         if (!this.app.vault.getAbstractFileByPath(`${base}.md`)) {
             return { filePath: `${base}.md`, title };
         }
         for (let n = 2; ; n++) {
             const candidate = `${title} ${n}`;
-            if (!this.app.vault.getAbstractFileByPath(`${targetFolder}/${candidate}.md`)) {
-                return { filePath: `${targetFolder}/${candidate}.md`, title: candidate };
+            if (!this.app.vault.getAbstractFileByPath(`${prefix}${candidate}.md`)) {
+                return { filePath: `${prefix}${candidate}.md`, title: candidate };
             }
         }
     }

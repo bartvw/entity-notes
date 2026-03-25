@@ -359,7 +359,6 @@ class EntityTypeModal extends Modal {
         if (!name) { new Notice('Name is required.'); return; }
         if (!tag)  { new Notice('Trigger tag is required.'); return; }
         if (!tag.startsWith('#')) { new Notice('Trigger tag must start with #.'); return; }
-        if (!dir)  { new Notice('Target folder is required.'); return; }
 
         // Build frontmatter template from the key-value pairs.
         const template: Record<string, unknown> = {};
