@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.1] - 2026-03-25
+
+### Fixed
+
+- **Vault root as target folder.** Entity types can now be configured with an empty target folder to store notes directly in the vault root. Previously leaving the field blank blocked saving with a "Target folder is required" notice.
+
 ## [1.2.0] - 2026-03-25
 
 ### Added
@@ -61,5 +67,5 @@ No user-facing changes. Development tooling improvements only.
 - Five built-in entity types: Person, Idea, Accomplishment, Feedback, Project. All are enabled by default and fully customizable.
 - Settings UI to add, edit, and delete entity types. Each type exposes: name, trigger tag, target folder, pill color, enabled toggle, and a frontmatter template for extra fields.
 - Created notes include YAML frontmatter: `title`, `entity-type`, `tags`, `created`, and `source-note` (wikilink back to the originating note).
-- List items are handled naturally: `- Met Alice #person` becomes `- [[Met Alice]]`.
+- List items are handled naturally: `- Add dark mode support #idea` becomes `- [[Add dark mode support]]`.
 - Trigger tags inside fenced code blocks and YAML frontmatter are ignored.
