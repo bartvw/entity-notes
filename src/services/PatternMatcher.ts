@@ -207,13 +207,13 @@ export class PatternMatcher {
     /**
      * Returns the index of the trigger tag within the line if it appears as a
      * complete tag, or -1. A complete tag is:
-     *   - preceded by start-of-string or whitespace  ((?<!\S))
+     *   - preceded by start-of-string or whitespace  ((^|\s))
      *   - not followed by a character that continues an Obsidian tag
      *     (alphanumeric, -, _, /)
      */
     private findTagIndex(line: string, tag: string): number {
         const m = this.tagRegex(tag).exec(line);
-        return m !== null ? m.index : -1;
+        return m !== null ? m.index + (m[1]?.length ?? 0) : -1;
     }
 
     /**
@@ -223,7 +223,7 @@ export class PatternMatcher {
      * does not have a meaningful plain-text title for Case 2.
      */
     private hasMeaningfulContent(line: string, tag: string): boolean {
-        let s = line.replace(this.tagRegex(tag), '').trim();
+        let s = line.replace(this.tagRegex(tag), '$1').trim();
         s = s.replace(/\[\[[^\]]*\]\]/g, '').trim(); // strip wikilinks
         s = s.replace(/^\d+[.)]\s*/, '').trim();   // ordered list: "1. " or "1)"
         s = s.replace(/^[-*+]\s*/, '').trim();     // unordered list: "- ", "* ", "+ "
@@ -233,8 +233,8 @@ export class PatternMatcher {
 
     private tagRegex(tag: string): RegExp {
         const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // (?<!\S)  = preceded by whitespace or start-of-string (zero-width)
+        // (^|\s)   = preceded by start-of-string or whitespace (consuming group 1)
         // (?![…])  = not followed by a tag-continuing character
-        return new RegExp(`(?<!\\S)${escaped}(?![a-zA-Z0-9_\\-\\/])`, 'g');
+        return new RegExp(`(^|\\s)${escaped}(?![a-zA-Z0-9_\\-\\/])`, 'g');
     }
 }

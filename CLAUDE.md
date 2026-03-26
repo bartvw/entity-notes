@@ -8,6 +8,12 @@ This is conceptually the same as the "inline task to note" flow in the TaskNotes
 
 ---
 
+## Development workflow
+
+When implementing any non-trivial change, start by writing a failing test that captures the expected behavior before touching the implementation. Only proceed to the implementation once the failing test is in place. Skip this step only when a test is not feasible (e.g. pure UI/CM6 widget rendering that cannot run outside Obsidian).
+
+---
+
 ## Project structure
 
 ```
@@ -196,10 +202,87 @@ On first install, seed the following default entity types:
 
 ---
 
+## Lifecycle and cleanup
+
+- Register **all** event listeners through the framework so they are auto-cleaned on unload:
+  - `this.registerEvent(this.app.vault.on(...))` — vault/metadataCache/workspace events
+  - `this.registerDomEvent(el, type, cb)` — DOM listeners
+  - `this.registerInterval(setInterval(...))` — timers
+- Never call `.off()` / `.detach()` manually on events passed to `registerEvent()` — double-cleanup causes bugs.
+- Never detach or close leaves in `onunload()` — this breaks Obsidian's restart state restoration.
+- Raw `addEventListener` calls not wrapped in `registerDomEvent()` must be removed manually in `onunload()`.
+- Keep `onload()` fast; defer expensive initialization until first use.
+
+---
+
+## API usage patterns
+
+- **Atomic file edits**: use `app.vault.process()` for read-modify-write to prevent races between read and write.
+- **Reading files**: use `vault.cachedRead()` for display-only reads; use `vault.read()` only when you intend to modify the file (guarantees fresh content).
+- **Resolving wikilinks**: use `app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath)` to get a `TFile` from a wikilink path.
+- **Active view**: use `app.workspace.getActiveViewOfType(MarkdownView)` — `activeLeaf` is deprecated.
+- **Settings load**: always merge with `DEFAULT_SETTINGS` so new fields added in future versions don't land as `undefined`:
+  ```typescript
+  this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  ```
+- **Settings save**: debounce `saveSettings()` when called from rapid UI interactions (text field `onChange`); use the `debounce()` helper from `'obsidian'`.
+- All async vault operations (`vault.create`, `vault.modify`, `vault.read`, etc.) must be `await`ed or explicitly handled — silently dropped promises cause data loss.
+- Use `requireApiVersion('x.y.z')` at runtime to guard calls to APIs introduced after `minAppVersion`.
+
+---
+
+## CSS and DOM conventions
+
+- All plugin styles go in `styles.css` — Obsidian loads it automatically. Never inject a `<style>` element at runtime.
+- Use Obsidian's CSS variables so the plugin respects themes:
+  - Colors: `--color-base-00`…`--color-base-100`, `--color-accent`, `--text-normal`, `--text-muted`
+  - Spacing: `--size-2-1`, `--size-4-2`, etc.
+  - Font: `--font-text`, `--font-monospace`
+  - Borders: `--border-width`, `--radius-s`, `--radius-m`
+- Scope all selectors under a plugin-specific class (e.g., `.entity-notes-pill`) to avoid collisions with Obsidian core or other plugins.
+- Do not target internal Obsidian selectors like `.workspace-leaf-content .cm-editor .cm-line` — these break across updates.
+
+---
+
+## Mobile compatibility
+
+- Set `"isDesktopOnly": true` in `manifest.json` if the plugin uses Node.js or Electron APIs.
+- Guard any Node.js / Electron code paths with `Platform.isDesktopApp` from `'obsidian'`.
+- Status bar items are unavailable on mobile — guard with `Platform.isDesktopApp`.
+- Do not use regex **lookbehind assertions** in code that runs on mobile — iOS does not support them.
+- Use forward slashes for all file paths — mobile does not use backslashes.
+
+---
+
+## Performance
+
+- In CM6 `update()`: return early if neither `update.docChanged` nor `update.viewportChanged` nor a relevant `StateEffect` was dispatched.
+- Iterate only `view.visibleRanges`, not the full document.
+- Implement `WidgetType.eq()` to allow CM6 to reuse DOM nodes when the widget is unchanged.
+- Do not make async calls or vault I/O inside CM6 `update()`.
+- Debounce vault `'modify'` event handlers — vault fires on every keystroke. Use `debounce(handler, 500)` from `'obsidian'`.
+
+---
+
+## Testing
+
+- Pure functions with no Obsidian imports (string parsing, regex, filename sanitization, frontmatter builders) should be unit-tested with Vitest.
+- Code that imports from `'obsidian'` can be tested using [`jest-environment-obsidian`](https://github.com/obsidian-community/jest-environment-obsidian), which stubs the module automatically.
+- CM6 widgets and vault integration can only be reliably tested inside the real Obsidian environment using an embedded test runner.
+- Keep business logic in standalone modules (like `PatternMatcher`, `keymapUtils`) to maximize the testable surface area.
+
+---
+
 ## What to avoid
 
 - Do not bundle `@codemirror/*` packages — they must be external.
 - Do not maintain a custom in-memory index of notes. Use `app.metadataCache`.
 - Do not hardcode entity types anywhere outside of the default settings.
-- Do not touch `app.workspace.activeLeaf` directly for note creation — use `app.vault.create()` and let the user open the note if they want.
-- Do not use `innerHTML` in widget rendering. Use `createEl` / DOM API.
+- Do not touch `app.workspace.activeLeaf` — it is deprecated. Use `app.workspace.getActiveViewOfType(MarkdownView)`.
+- Do not use `innerHTML`, `outerHTML`, or `insertAdjacentHTML`. Use `createEl` / DOM API.
+- Do not inject `<style>` elements at runtime — put all CSS in `styles.css`.
+- Do not parse frontmatter manually from file text — use `app.metadataCache`.
+- Do not make document modifications inside a CM6 `ViewPlugin.update()` call — dispatch them in response to user actions.
+- Do not use Node.js (`fs`, `path`, `child_process`) or Electron APIs in code paths reachable on mobile without a `Platform.isDesktopApp` guard.
+- Do not use regex lookbehind assertions in code that runs on mobile (iOS does not support them).
+- Do not drop promises from async vault operations — always `await` or `.catch()` them.

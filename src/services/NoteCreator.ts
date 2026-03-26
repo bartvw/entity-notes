@@ -76,7 +76,7 @@ export class NoteCreator {
      */
     static deriveTitle(lineText: string, triggerTag: string): string {
         const re = NoteCreator.tagRegex(triggerTag);
-        let s = lineText.replace(re, ' ').trim();
+        let s = lineText.replace(re, '$1').trim();
 
         // Unwrap wikilinks: [[Alice]] → Alice, [[Alice|Alias]] → Alice
         s = s.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, '$1').trim();
@@ -101,7 +101,7 @@ export class NoteCreator {
      */
     static deriveText(lineText: string, triggerTag: string): string {
         const re = NoteCreator.tagRegex(triggerTag);
-        let s = lineText.replace(re, ' ').trim();
+        let s = lineText.replace(re, '$1').trim();
 
         // Strip leading list / task markers (same order as PatternMatcher)
         s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
@@ -256,7 +256,7 @@ export class NoteCreator {
 
     private static tagRegex(tag: string): RegExp {
         const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(`(?<!\\S)${escaped}(?![a-zA-Z0-9_\\-\\/])`, 'g');
+        return new RegExp(`(^|\\s)${escaped}(?![a-zA-Z0-9_\\-\\/])`, 'g');
     }
 }
 
