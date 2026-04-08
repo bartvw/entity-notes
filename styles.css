@@ -37,6 +37,13 @@
     cursor: not-allowed;
 }
 
+/* entity-notes: base files confirm modal — button row */
+.entity-notes-modal-buttons {
+    display: flex;
+    gap: var(--size-4-2, 8px);
+    margin-top: var(--size-4-4, 16px);
+}
+
 /* entity-notes: settings modal — frontmatter template rows */
 .entity-notes-template-rows {
     margin-bottom: 0.75em;

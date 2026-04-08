@@ -2,6 +2,8 @@ import { App, Modal, Notice, PluginSettingTab, Setting, ToggleComponent } from '
 import type EntityNotesPlugin from './main';
 import type { EntityIdentificationMethod, EntityType, PluginSettings } from './types';
 import { coerceValue, generateId } from './settings-utils';
+import { BaseFileGenerator } from './services/BaseFileGenerator';
+import { BaseFilesConfirmModal } from './BaseFilesConfirmModal';
 
 export const DEFAULT_ENTITY_TYPES: EntityType[] = [
     { id: 'person',         name: 'Person',         triggerTag: '#person',         targetFolder: 'Entities/People',          color: '#4a90d9', enabled: true, frontmatterTemplate: {} },
@@ -115,6 +117,53 @@ export class EntityNotesSettingTab extends PluginSettingTab {
                     new EntityTypeModal(this.app, this.plugin, null, () => this.display()).open();
                 }),
             );
+
+        new Setting(containerEl)
+            .addButton(btn => btn
+                .setButtonText('Create base files')
+                .onClick(() => { void this.createBaseFiles(); }),
+            );
+    }
+
+    private async createBaseFiles(): Promise<void> {
+        const enabledTypes = this.plugin.settings.entityTypes.filter(et => et.enabled);
+        if (enabledTypes.length === 0) {
+            new Notice('No enabled entity types.');
+            return;
+        }
+
+        const existing = enabledTypes.filter(
+            et => this.app.vault.getAbstractFileByPath(BaseFileGenerator.targetPath(et)) !== null,
+        );
+
+        let overwrite = false;
+        if (existing.length > 0) {
+            const modal = new BaseFilesConfirmModal(
+                this.app,
+                enabledTypes.length - existing.length,
+                existing.length,
+            );
+            modal.open();
+            const choice = await modal.result;
+            if (choice === 'cancel') return;
+            overwrite = choice === 'overwrite';
+        }
+
+        const results = await new BaseFileGenerator(this.app).generate(
+            enabledTypes,
+            this.plugin.settings,
+            overwrite,
+        );
+        await this.plugin.saveSettings();
+
+        const created = results.filter(r => r.status === 'created').length;
+        const overwritten = results.filter(r => r.status === 'overwritten').length;
+        const message = created === 0 && overwritten === 0
+            ? 'No base files created; all existing files were skipped.'
+            : overwritten > 0
+                ? 'Base files created or overwritten.'
+                : 'Base files created.';
+        new Notice(message);
     }
 
     private buildFrontmatterTable(containerEl: HTMLElement): void {
