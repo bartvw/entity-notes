@@ -81,10 +81,20 @@ export class NoteCreator {
         // Unwrap wikilinks: [[Alice]] → Alice, [[Alice|Alias]] → Alice
         s = s.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, '$1').trim();
 
-        // Strip leading list / task markers (same order as PatternMatcher)
-        s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
-        s = s.replace(/^[-*+]\s*/, '').trim();     // "- " / "* " / "+ "
-        s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // "[ ] " / "[x] "
+        // Strip leading list / task markers iteratively to handle nested formats
+        // such as "- [ ] - content" where a separator "- " follows the task marker.
+        let prev: string;
+        do {
+            prev = s;
+            s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
+            s = s.replace(/^[-*+]\s*/, '').trim();     // "- " / "* " / "+ "
+            s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // "[ ] " / "[x] "
+        } while (s !== prev);
+
+        // Strip a leading timestamp (e.g. "12:30" or "9:45") that may appear as a
+        // time annotation between list markers and the actual content, optionally
+        // followed by a separator dash ("12:30 - content" → "content").
+        s = s.replace(/^\d{1,2}:\d{2}\s*[-–]?\s*/, '').trim();
 
         s = s.replace(/\s+/g, ' ').trim();
 
@@ -103,10 +113,15 @@ export class NoteCreator {
         const re = NoteCreator.tagRegex(triggerTag);
         let s = lineText.replace(re, '$1').trim();
 
-        // Strip leading list / task markers (same order as PatternMatcher)
-        s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
-        s = s.replace(/^[-*+]\s*/, '').trim();     // "- " / "* " / "+ "
-        s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // "[ ] " / "[x] "
+        // Strip leading list / task markers iteratively to handle nested formats
+        // such as "- [ ] - content" where a separator "- " follows the task marker.
+        let prev: string;
+        do {
+            prev = s;
+            s = s.replace(/^\d+[.)]\s*/, '').trim();   // "1. " / "1)"
+            s = s.replace(/^[-*+]\s*/, '').trim();     // "- " / "* " / "+ "
+            s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // "[ ] " / "[x] "
+        } while (s !== prev);
 
         return s.replace(/\s+/g, ' ').trim();
     }

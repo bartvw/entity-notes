@@ -96,6 +96,24 @@ describe('NoteCreator.deriveTitle', () => {
         expect(NoteCreator.deriveTitle('Meeting: Q1 "plan" #person', '#person'))
             .toBe('Meeting Q1 plan');
     });
+
+    it('strips extra leading separator after task checkbox (iterative marker stripping)', () => {
+        // "- [ ] - content" — after stripping "- " and "[ ] ", another "- " remains
+        expect(NoteCreator.deriveTitle('- [ ] - some content #idea', '#idea'))
+            .toBe('some content');
+    });
+
+    it('strips timestamp prefix from title in task line with timestamp', () => {
+        // "- [ ] - 12:30 - content" — the timestamp should not appear in the entity name
+        expect(NoteCreator.deriveTitle('- [ ] - 12:30 - some content #idea', '#idea'))
+            .toBe('some content');
+    });
+
+    it('strips timestamp prefix when line has wikilink after timestamp', () => {
+        // "- [ ] - 12:30 - [[some text]] #idea" — entity name from wikilink text only
+        expect(NoteCreator.deriveTitle('- [ ] - 12:30 - [[some text]] #idea', '#idea'))
+            .toBe('some text');
+    });
 });
 
 // ---------------------------------------------------------------------------

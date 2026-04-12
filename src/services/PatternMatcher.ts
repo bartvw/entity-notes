@@ -225,9 +225,21 @@ export class PatternMatcher {
     private hasMeaningfulContent(line: string, tag: string): boolean {
         let s = line.replace(this.tagRegex(tag), '$1').trim();
         s = s.replace(/\[\[[^\]]*\]\]/g, '').trim(); // strip wikilinks
-        s = s.replace(/^\d+[.)]\s*/, '').trim();   // ordered list: "1. " or "1)"
-        s = s.replace(/^[-*+]\s*/, '').trim();     // unordered list: "- ", "* ", "+ "
-        s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // task checkbox: "[ ] " or "[x] "
+
+        // Strip leading list / task markers iteratively to handle nested formats
+        // such as "- [ ] - content" where a separator "- " follows the task marker.
+        let prev: string;
+        do {
+            prev = s;
+            s = s.replace(/^\d+[.)]\s*/, '').trim();   // ordered list: "1. " or "1)"
+            s = s.replace(/^[-*+]\s*/, '').trim();     // unordered list: "- ", "* ", "+ "
+            s = s.replace(/^\[[ xX]\]\s*/, '').trim(); // task checkbox: "[ ] " or "[x] "
+        } while (s !== prev);
+
+        // A leading timestamp (e.g. "12:30") used as a time annotation between markers
+        // and content is not considered meaningful for deriving an entity title.
+        s = s.replace(/^\d{1,2}:\d{2}\s*[-–]?\s*/, '').trim();
+
         return s.length > 0;
     }
 
