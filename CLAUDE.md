@@ -10,10 +10,10 @@ Watches the editor for lines matching user-configured trigger tags (e.g. `#perso
 ## Commands
 
 ```bash
-npm run dev        # esbuild watch mode (outputs main.js)
-npm run build      # type-check + production build
-npm test           # vitest run
-npm run lint       # eslint
+pnpm run dev       # esbuild watch mode (outputs main.js)
+pnpm run build     # type-check + production build
+pnpm test          # vitest run
+pnpm run lint      # eslint
 ```
 
 ---

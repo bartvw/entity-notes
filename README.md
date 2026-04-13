@@ -120,8 +120,8 @@ All five standard fields are optional and their names are configurable (see [Fro
 ```bash
 git clone https://github.com/bartvw/entity-notes
 cd entity-notes
-npm install
-npm run dev   # watch mode
+pnpm install
+pnpm run dev   # watch mode
 ```
 
 Copy (or symlink) the folder into `<vault>/.obsidian/plugins/entity-notes/` and enable it in Obsidian.
