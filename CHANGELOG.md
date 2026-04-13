@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-04-13
+
+### Added
+
+- **Obsidian Bases file generation.** A new "Create base files" button in the settings screen generates an `Entities/<id>.base` file for each enabled entity type. Each generated base is a table view filtered to its entity type, with column order derived from the enabled frontmatter fields and template. A confirmation modal handles existing files (skip / overwrite / cancel).
+
+### Fixed
+
+- **Timestamps no longer appear in entity names from task lines.** Lines such as `- [ ] - 12:30 - Talk to Alice #person` now produce an entity named `Talk to Alice` instead of `- 1230 - Talk to Alice`. List/task marker stripping is now iterative, and a leading `HH:MM` timestamp (with optional separator dash) is removed from the derived title.
+- **iOS compatibility.** Replaced regex lookbehind assertions in tag matching with a consuming alternative so the plugin works on iPhone and iPad, where lookbehind is unsupported.
+- **Numeric settings reject non-finite values.** Values like `Infinity` and `-Infinity` no longer pass numeric coercion in entity-type frontmatter templates and fall through to be stored as strings.
+- **Whitespace-only frontmatter values no longer coerce to `0`.** A template field set to spaces or tabs is now kept as a string instead of being silently turned into the number zero.
+
 ## [1.2.1] - 2026-03-25
 
 ### Fixed
