@@ -100,6 +100,18 @@ describe('PatternMatcher.match — Case 2 (full-line)', () => {
         it('line with plain text plus an embedded wikilink matches as full-line', () => {
             expect(pm.match('Met [[Sarah]] #person', [PERSON], CLEAR, allResolved)).toEqual(fullLine(PERSON));
         });
+
+        it('resolved wikilink with only a timestamp prefix returns null — timestamp is not meaningful content', () => {
+            // "- [ ] - 12:30 - [[some text]] #idea" where the link is resolved:
+            // the only surrounding content is a timestamp, which is not a useful entity title
+            expect(pm.match('- [ ] - 12:30 - [[some text]] #idea', [IDEA], CLEAR, allResolved)).toBeNull();
+        });
+
+        it('unresolved wikilink after timestamp in task item is detected as Case 1', () => {
+            // Even with a timestamp prefix, an unresolved wikilink must trigger Case 1
+            expect(pm.match('- [ ] - 12:30 - [[some text]] #idea', [IDEA], CLEAR, noneResolved))
+                .toEqual(unresolvedLink(IDEA, 'some text'));
+        });
     });
 
     // --- disabled ---
