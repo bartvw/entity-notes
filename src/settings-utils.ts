@@ -9,7 +9,7 @@ export function coerceValue(key: string, value: string): unknown {
     }
     if (value === 'true')  return true;
     if (value === 'false') return false;
-    if (value.trim() !== '' && !isNaN(Number(value))) return Number(value);
+    if (value.trim() !== '' && !isNaN(Number(value)) && isFinite(Number(value))) return Number(value);
     return value;
 }
 
