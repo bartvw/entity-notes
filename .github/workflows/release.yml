@@ -20,10 +20,12 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            - uses: pnpm/action-setup@v4
+
             - uses: actions/setup-node@v4
               with:
                   node-version: 22.x
-                  cache: "npm"
+                  cache: "pnpm"
 
             - name: Verify manifest version matches tag
               run: |
@@ -34,8 +36,8 @@ jobs:
                       exit 1
                   fi
 
-            - run: npm ci
-            - run: npm run build
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm run build
 
             - name: Extract changelog for ${{ github.ref_name }}
               id: changelog

@@ -16,33 +16,36 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
             - uses: actions/setup-node@v4
               with:
                   node-version: 22.x
-                  cache: "npm"
-            - run: npm ci
-            - run: npm run build
+                  cache: "pnpm"
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm run build
 
     lint:
         name: Lint
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
             - uses: actions/setup-node@v4
               with:
                   node-version: 22.x
-                  cache: "npm"
-            - run: npm ci
-            - run: npm run lint
+                  cache: "pnpm"
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm run lint
 
     test:
         name: Test
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
             - uses: actions/setup-node@v4
               with:
                   node-version: 22.x
-                  cache: "npm"
-            - run: npm ci
-            - run: npm test
+                  cache: "pnpm"
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm test
