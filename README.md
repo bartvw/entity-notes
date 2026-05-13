@@ -1,30 +1,20 @@
 # Entity Notes
 
-An [Obsidian](https://obsidian.md) plugin that watches your editor for lines containing user-configured trigger tags (e.g. `#person`, `#project`) and shows an inline button next to each match. Clicking the button creates a dedicated Markdown note for that entity with pre-filled YAML frontmatter, replaces the original line with a wikilink to the new note, and renders a colored pill badge next to the link.
+An [Obsidian](https://obsidian.md) plugin that displays color-coded pills next to wikilinks that point to entity notes, making it easy to see at a glance what type of entity each link represents. It also provides a quick way to create new entity notes: type a dangling wikilink followed by a trigger tag (e.g. `[[Project Alpha]] #project`), click the inline button, and the plugin creates a structured note with YAML frontmatter.
 
-## How it works
+## Features
 
-There are two conversion modes, chosen automatically based on what's on the line.
+### Entity pills
 
-### Line conversion
+The plugin scans your notes for wikilinks that point to entity notes (notes with an `entity-type` property or matching tags) and displays a colored pill badge after each link. The pill shows the entity type name and uses the configured color — all purely visual, never written to the file.
 
-When the trigger tag appears on a line that doesn't have an unresolved `[[wikilink]]` directly before it, the entire line is converted:
+![pill example](https://placehold.co/400x40/1a1a1a/ffffff?text=[[Project+Alpha]]+[project])
 
-1. Type a line containing a trigger tag:
-   ```
-   Redesign the onboarding flow #project
-   ```
-2. A small `→ Project` button appears immediately after `#project`.
-3. Click it. The plugin:
-   - Creates `Entities/Projects/Redesign the onboarding flow.md` with frontmatter and a note body
-   - Replaces the line with `[[Redesign the onboarding flow]]`
-   - Renders a colored `project` pill badge after the link (decoration only — not written to the file)
+Pills appear in Live Preview, Source mode, and Reading mode.
 
-List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alice]]`.
+### Creating entities from dangling links
 
-### Wikilink conversion
-
-When the trigger tag appears directly after an unresolved `[[wikilink]]`, only that wikilink is converted:
+The main way to create entity notes is by converting dangling (unresolved) wikilinks:
 
 1. Write a wikilink that doesn't yet have a note, followed by a trigger tag:
    ```
@@ -36,7 +26,7 @@ When the trigger tag appears directly after an unresolved `[[wikilink]]`, only t
    - Strips `#project` from the source line, leaving `[[Project Alpha]]` in place — which now resolves to the new note
    - Renders a `project` pill badge after the link
 
-### Multiple entities on one line
+#### Multiple entities on one line
 
 A line can have multiple buttons — one per unresolved wikilink+tag pair:
 
@@ -45,6 +35,22 @@ A line can have multiple buttons — one per unresolved wikilink+tag pair:
 ```
 
 Each button converts only its own wikilink. Clicking `→ Person` creates `Alice.md` and strips `#person`; the rest of the line is unchanged until you click `→ Project`.
+
+### Line conversion
+
+When the trigger tag appears on a line without a preceding unresolved wikilink, the entire line is converted:
+
+1. Type a line containing a trigger tag:
+   ```
+   Redesign the onboarding flow #project
+   ```
+2. A small `→ Project` button appears immediately after `#project`.
+3. Click it. The plugin:
+   - Creates `Entities/Projects/Redesign the onboarding flow.md` with frontmatter and a note body
+   - Replaces the line with `[[Redesign the onboarding flow]]`
+   - Renders a colored `project` pill badge after the link
+
+List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alice]]`.
 
 ## Default entity types
 
@@ -55,6 +61,7 @@ Each button converts only its own wikilink. Clicking `→ Person` creates `Alice
 | Accomplishment | `#accomplishment`| `Entities/Accomplishments` | ![#7ed321](https://placehold.co/12x12/7ed321/7ed321.png) `#7ed321` |
 | Feedback       | `#feedback`      | `Entities/Feedback`        | ![#9b59b6](https://placehold.co/12x12/9b59b6/9b59b6.png) `#9b59b6` |
 | Project        | `#project`       | `Entities/Projects`        | ![#e74c3c](https://placehold.co/12x12/e74c3c/e74c3c.png) `#e74c3c` |
+| Task           | `#task`          | `Entities/Tasks`           | ![#1abc9c](https://placehold.co/12x12/1abc9c/1abc9c.png) `#1abc9c` |
 
 All defaults can be edited or deleted, and you can add your own entity types.
 

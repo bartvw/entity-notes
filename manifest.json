@@ -3,7 +3,7 @@
 	"name": "Entity Notes",
 	"version": "1.3.0",
 	"minAppVersion": "1.12.4",
-	"description": "Convert tagged lines into structured Markdown notes with one click. Supports custom entity types such as #project, #idea, and #person, each with configurable frontmatter and a color-coded pill in the editor.",
+	"description": "Displays color-coded entity pills next to wikilinks that point to entity notes. Converts dangling links like [[Project Alpha]] #project into structured notes with one click. Supports custom entity types with configurable frontmatter.",
 	"author": "Bart van Wissen",
 	"isDesktopOnly": false
 }

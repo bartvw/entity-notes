@@ -77,7 +77,7 @@ No user-facing changes. Development tooling improvements only.
 - Inline `→ EntityType` button appears at the end of any line containing a configured trigger tag (e.g. `#project`, `#person`). Clicking it creates a dedicated note and replaces the line with a wikilink.
 - Entity pill badge rendered after wikilinks to known entity notes in Live Preview, Source mode, and Reading mode. The pill is visual only — never written to the file.
 - **Convert on Enter** setting (default: off). When enabled, pressing Enter at the end of a matched line triggers the conversion and moves the cursor to the next line.
-- Five built-in entity types: Person, Idea, Accomplishment, Feedback, Project. All are enabled by default and fully customizable.
+- Six built-in entity types: Person, Idea, Accomplishment, Feedback, Project, Task. All are enabled by default and fully customizable.
 - Settings UI to add, edit, and delete entity types. Each type exposes: name, trigger tag, target folder, pill color, enabled toggle, and a frontmatter template for extra fields.
 - Created notes include YAML frontmatter: `title`, `entity-type`, `tags`, `created`, and `source-note` (wikilink back to the originating note).
 - List items are handled naturally: `- Add dark mode support #idea` becomes `- [[Add dark mode support]]`.
