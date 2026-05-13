@@ -1,6 +1,6 @@
 # entity-notes — Obsidian Plugin
 
-Watches the editor for lines matching user-configured trigger tags (e.g. `#person`) and shows an inline convert button. Clicking it creates a dedicated Markdown note with YAML frontmatter and replaces the line with a wikilink.
+Lets users create entity notes on the fly by tagging dangling wikilinks (e.g. `[[Alice]] #person`) — clicking the inline button creates a Markdown note with YAML frontmatter at a per-type target folder, and the existing link now resolves to it. Also decorates every link to an entity note with a colored pill showing its type, in Live Preview, Source, and Reading mode. A secondary mode converts an entire untagged line containing a trigger tag into a new entity note + wikilink.
 
 **Behavior spec:** `SPEC.md` is the source of truth for intended behavior. Defer to it when in doubt.
 **Data types:** See `src/types.ts` for `EntityType`, `PluginSettings`, `FrontmatterField`.

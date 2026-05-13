@@ -1,50 +1,51 @@
 # Entity Notes
 
-An [Obsidian](https://obsidian.md) plugin that watches your editor for lines containing user-configured trigger tags (e.g. `#person`, `#project`) and shows an inline button next to each match. Clicking the button creates a dedicated Markdown note for that entity with pre-filled YAML frontmatter, replaces the original line with a wikilink to the new note, and renders a colored pill badge next to the link.
+An [Obsidian](https://obsidian.md) plugin for creating **entity notes on the fly**. While you write, drop a dangling `[[wikilink]]` for a person, project, or idea, tag it with `#person` / `#project` / `#idea`, and click the inline button — the plugin spins up a structured Markdown note for that entity with pre-filled YAML frontmatter, and the dangling link now resolves to it.
+
+Every link in your vault that points to an entity note is decorated with a small colored pill showing its type, so you can see at a glance which links are people, which are projects, and which are ideas — in Live Preview, Source mode, and Reading mode.
 
 ## How it works
 
-There are two conversion modes, chosen automatically based on what's on the line.
+### Tag a dangling link to turn it into an entity
 
-### Line conversion
+The main workflow: as you write, link to entities that don't exist yet and tag them.
 
-When the trigger tag appears on a line that doesn't have an unresolved `[[wikilink]]` directly before it, the entire line is converted:
-
-1. Type a line containing a trigger tag:
+1. Type a dangling wikilink followed by a trigger tag:
    ```
-   Redesign the onboarding flow #project
+   Had coffee with [[Alice]] #person about [[Project Alpha]] #project
    ```
-2. A small `→ Project` button appears immediately after `#project`.
-3. Click it. The plugin:
-   - Creates `Entities/Projects/Redesign the onboarding flow.md` with frontmatter and a note body
-   - Replaces the line with `[[Redesign the onboarding flow]]`
-   - Renders a colored `project` pill badge after the link (decoration only — not written to the file)
+2. A small `→ Person` button appears after `#person`, and a `→ Project` button appears after `#project`. Each one is independent and converts only its own link.
+3. Click `→ Person`. The plugin:
+   - Creates `Entities/People/Alice.md` with frontmatter
+   - Strips `#person` from the line, leaving `[[Alice]]` in place — now resolving to the new note
+   - Renders a colored `person` pill after the link (decoration only — not written to the file)
+4. Click `→ Project` to do the same for `Project Alpha`.
 
-List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alice]]`.
-
-### Wikilink conversion
-
-When the trigger tag appears directly after an unresolved `[[wikilink]]`, only that wikilink is converted:
-
-1. Write a wikilink that doesn't yet have a note, followed by a trigger tag:
-   ```
-   [[Project Alpha]] #project
-   ```
-2. A `→ Project` button appears after `#project`.
-3. Click it. The plugin:
-   - Creates `Entities/Projects/Project Alpha.md` with frontmatter (no note body)
-   - Strips `#project` from the source line, leaving `[[Project Alpha]]` in place — which now resolves to the new note
-   - Renders a `project` pill badge after the link
-
-### Multiple entities on one line
-
-A line can have multiple buttons — one per unresolved wikilink+tag pair:
+The line ends up as:
 
 ```
-[[Alice]] #person [[Project Alpha]] #project
+Had coffee with [[Alice]] about [[Project Alpha]]
 ```
 
-Each button converts only its own wikilink. Clicking `→ Person` creates `Alice.md` and strips `#person`; the rest of the line is unchanged until you click `→ Project`.
+…and renders as:
+
+```
+Had coffee with [[Alice]] [person] about [[Project Alpha]] [project]
+```
+
+### Pills follow your entity notes everywhere
+
+Once a note is an entity, every wikilink pointing at it gets a pill, no matter where the link lives. The pill is a visual decoration only — it's never written into your files. Color and label come from the entity type's settings.
+
+### Convert a whole line instead
+
+If a line doesn't have a dangling wikilink in front of the trigger tag, the entire line is converted instead:
+
+```
+Redesign the onboarding flow #project
+```
+
+Click `→ Project` and the line becomes `[[Redesign the onboarding flow]]`, with a new note created at `Entities/Projects/Redesign the onboarding flow.md`. List items are handled naturally — `- Met Alice #person` becomes `- [[Met Alice]]`.
 
 ## Default entity types
 
@@ -63,7 +64,7 @@ All defaults can be edited or deleted, and you can add your own entity types.
 ### Global
 
 - **Convert on enter** (default: off) — when enabled, pressing Enter at the end of a matched line triggers conversion immediately, without clicking the button. All matches on the line are converted at once. A newline is still inserted as normal.
-- **Identify entities by** (default: Entity-type property) — controls how the plugin recognises entity notes for pill display:
+- **Identify entities by** (default: Entity-type property) — controls how the plugin recognises which notes are entity notes (and which type) so it can render pills:
   - *Entity-type property* — the `entity-type` frontmatter field must be present and match an entity type id. At most one pill per link.
   - *Tag* — the `tags` frontmatter field must contain one or more entity type ids. One pill per matching tag; a single note can match multiple types.
 
@@ -86,6 +87,19 @@ Changes take effect immediately without reloading the plugin.
 
 ## Created note format
 
+**Dangling-link conversion** creates a note with frontmatter only (no body). The title field is the bare link text.
+
+```markdown
+---
+title: "Alice"
+entity-type: "person"
+tags:
+  - person
+created: "2026-05-13"
+source-note: "[[Daily Note 2026-05-13]]"
+---
+```
+
 **Line conversion** creates a note with frontmatter and a body:
 
 ```markdown
@@ -94,16 +108,14 @@ title: "Redesign the onboarding flow"
 entity-type: "project"
 tags:
   - project
-created: "2026-03-22"
-source-note: "[[Daily Note 2026-03-22]]"
+created: "2026-05-13"
+source-note: "[[Daily Note 2026-05-13]]"
 ---
 
 Redesign the onboarding flow
 ```
 
-The note body contains the line text with the trigger tag and list markers stripped. Wikilinks embedded in the line are preserved in full in both the title field and the body, while the filename strips the brackets (`[[Alice]]` → `Alice`).
-
-**Wikilink conversion** creates a note with frontmatter only (no body). The title field is the bare link text.
+The body contains the line text with the trigger tag and list markers stripped. Wikilinks embedded in the line are preserved in full in both the title field and the body, while the filename strips the brackets (`[[Alice]]` → `Alice`).
 
 All five standard fields are optional and their names are configurable (see [Frontmatter fields](#frontmatter-fields) above). Fields from the frontmatter template are appended after the standard fields. Template tags are merged into the `tags` list; any template key that matches a standard field name is ignored (standard fields always win).
 

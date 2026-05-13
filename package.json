@@ -1,7 +1,7 @@
 {
 	"name": "entity-notes",
 	"version": "1.3.0",
-	"description": "An Obsidian plugin that converts tagged entities into notes with backlinks to the original note.",
+	"description": "An Obsidian plugin for creating entity notes on the fly from dangling wikilinks, with colored pills next to links to those notes.",
 	"author": "Bart van Wissen",
 	"main": "main.js",
 	"type": "module",
